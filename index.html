@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#241a33">
+<title>Vokabeltrainer mit KI bauen · einfachmachen.design</title>
+<meta name="description" content="Schritt für Schritt zum eigenen Vokabeltrainer – mit einem KI-Chat, ohne Vorwissen und ohne Installation. Für Schüler:innen ab 13.">
+<meta property="og:title" content="Lerne mit KI arbeiten und entwickle dir einen Vokabeltrainer">
+<meta property="og:description" content="Schritt für Schritt zum eigenen Vokabeltrainer – mit einem KI-Chat, ohne Vorwissen und ohne Installation. Für Schüler:innen ab 13.">
+<meta property="og:locale" content="de_DE">
+<meta property="og:site_name" content="einfachmachen.design">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23ffd84d'/%3E%3Ctext x='16' y='22' font-family='system-ui' font-size='17' font-weight='700' text-anchor='middle' fill='%23161616'%3E%3C/%3E%3C/text%3E%3C/svg%3E">
+<style>
+  @font-face { font-family: "Gasoek One"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/gasoek-one-400-latin.woff2") format("woff2"); }
+  @font-face { font-family: "Inter"; font-style: normal; font-weight: 400 800; font-display: swap; src: url("fonts/inter-var-latin.woff2") format("woff2"); }
+  :root {
+    --page: #d9d0dc;
+    --card: #f7f3f8;
+    --sunken: #ebe4ee;
+    --band: #241a33;
+    --band-ink: #f7f3f8;
+    --line: #241a33;
+    --shadow: #241a33;
+    --soft-line: #cbbfd2;
+    --ink: #241a33;
+    --muted: #5e5068;
+    --bubble: #dfe5f9;
+    --on-bubble: #241a33;
+    --on-accent: #241a33;
+    --yellow: #edb33c;
+    --pink: #e88dc9;
+    --blue: #6f8ce6;
+    --red: #d0625f;
+    /* alte Namen, zeigen auf die neuen Farben */
+    --coral: var(--pink);
+    --teal: var(--blue);
+    --rose: var(--red);
+    --accent: var(--pink);
+    --accent-ink: var(--on-accent);
+    --radius: 22px;
+    --hand: "Gasoek One", "Arial Black", system-ui, sans-serif;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; background: var(--band); }
+  body {
+    margin: 0; background: var(--band); color: var(--ink);
+    font-family: var(--sans); font-size: 17px; line-height: 1.6;
+  }
+  a { color: var(--ink); text-decoration-color: var(--coral); text-decoration-thickness: 3px; text-underline-offset: 3px; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 max(16px, 6vw, env(safe-area-inset-right)) 0 max(16px, 6vw, env(safe-area-inset-left)); }
+
+  /* Kopfband mit Welle */
+  .band { background: var(--band); position: relative; overflow: hidden; }
+  .band .wrap { padding-top: 24px; padding-bottom: 30px; position: relative; z-index: 1; }
+  .band { color: var(--band-ink); }
+  .stars { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; }
+  /* Sterne im Kopf treiben langsam in kleinen Bögen (versetzt, verschiedene Richtungen) */
+  @keyframes drift-a { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(6px, -4px); } 50% { transform: translate(10px, 2px); } 75% { transform: translate(4px, 6px); } }
+  @keyframes drift-b { 0%, 100% { transform: translate(0, 0); } 33% { transform: translate(-7px, 5px); } 66% { transform: translate(-3px, -6px); } }
+  @keyframes drift-c { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(5px, -8px); } }
+  .band:not(.foot-band) .stars circle { transform-box: fill-box; animation: drift-a 18s ease-in-out infinite; }
+  .band:not(.foot-band) .stars circle:nth-child(2n) { animation-name: drift-b; animation-duration: 23s; animation-delay: -7s; }
+  .band:not(.foot-band) .stars circle:nth-child(3n) { animation-name: drift-c; animation-duration: 27s; animation-delay: -13s; }
+  .band:not(.foot-band) .stars circle:nth-child(5n) { animation-duration: 31s; animation-delay: -4s; }
+  .band:not(.foot-band) .stars circle:nth-child(7n) { animation-direction: reverse; }
+  @media (prefers-reduced-motion: reduce) { .stars circle { animation: none !important; } }
+  .deko { position: absolute; z-index: 0; display: block; }
+  /* Gesichter hängen an der Überschrift: --h1w = Breite der Überschrift, daneben Abstand + Gesichter */
+  .band { --kw: 170px; --kgap: clamp(20px, 3vw, 40px); --h1w: min(749px, calc(94vw - var(--kw) - var(--kgap) - 16px - max(0px, (100vw - 1000px) / 2))); }
+  @media (max-width: 999px) { .band { --kw: 140px; } }
+  header.hero { position: relative; }
+  .deko.kids { width: var(--kw); height: auto; aspect-ratio: 160 / 272; left: calc(var(--h1w) + var(--kgap)); top: 6px; }
+  @media (max-width: 759px) {
+    .deko.kids { --kw: 118px; left: auto; right: calc(-1 * max(16px, 6vw) - 64px + max(0px, (100vw - 375px) / 2)); top: 44px; }
+    .brand { font-size: min(22px, 5.6vw); }
+    .band .wrap { padding-bottom: 14px; }
+  }
+  .wave { display: block; width: 100%; height: 36px; color: var(--band); background: var(--page); margin-top: -1px; }
+  /* Heller Inhaltsbereich über volle Breite; Body bleibt dunkel, damit beim Überscrollen auf Mobil nichts Helles durchblitzt */
+  main.wrap { display: flow-root; margin-top: -1px; padding-bottom: 64px; background: var(--page); box-shadow: 0 0 0 100vmax var(--page); clip-path: inset(0 -100vmax); }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .brand { font-family: var(--sans); font-size: 20px; font-weight: 400; color: var(--red); }
+  .brand a { color: inherit; text-decoration: none; }
+  .home { font-size: 14px; font-weight: 700; color: var(--ink); text-decoration: none; background: var(--card); border: 2px solid var(--line); border-radius: 999px; padding: 4px 14px; box-shadow: 2px 2px 0 var(--shadow); }
+    header.hero { margin-top: 30px; max-width: 835px; }
+  .hero .eyebrow { margin-bottom: 18px; }
+  .eyebrow { display: inline-block; color: var(--ink); font-size: 13px; font-weight: 800; background: var(--card); border: 2px solid var(--line); border-radius: 999px; padding: 3px 12px; }
+  h1 { font-family: var(--hand); font-size: clamp(1.85rem, 5.8vw, 3.8rem); line-height: 1.18; font-weight: 400; margin: 0; max-width: 749px; }
+  @media (min-width: 760px) { h1 { max-width: var(--h1w); } }
+  @media (max-width: 759px) { h1 { font-size: min(40px, 10.5vw); line-height: 1.1; max-width: 329px; } }
+  .lead { font-size: clamp(1.05rem, 1.8vw, 1.19rem); margin: 32px 0 0; max-width: 835px; }
+
+  .tools { margin-top: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .tools .label { font-size: 15px; color: var(--muted); margin-right: 2px; }
+  .pill { border: 2px solid var(--line); border-radius: 999px; padding: 3px 12px; font-size: 14px; font-weight: 700; color: var(--on-accent); }
+  .pill:nth-of-type(4n+1) { background: var(--yellow); }
+  .pill:nth-of-type(4n+2) { background: var(--teal); }
+  .pill:nth-of-type(4n+3) { background: var(--coral); }
+  .pill:nth-of-type(4n+4) { background: var(--rose); }
+
+  h2 { font-family: var(--hand); font-size: clamp(1.75rem, 3.2vw, 2.3rem); line-height: 1.2; font-weight: 400; margin: 56px 0 14px; }
+  h2 small { font-family: var(--sans); }
+  h2 small { font-size: 1rem; font-weight: 500; color: var(--muted); }
+  h3 { font-family: var(--sans); font-size: 1.45rem; line-height: 1.2; font-weight: 700; margin: 0; }
+
+  .note { background: var(--card); border: 2px solid var(--line); border-radius: var(--radius); padding: 20px 22px; max-width: 760px; box-shadow: 4px 4px 0 var(--teal); }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 10px; }
+  .note.warn { background: var(--sunken); box-shadow: 4px 4px 0 var(--coral); }
+
+  /* Schritte */
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: var(--radius); padding: 22px; margin-top: 22px; box-shadow: 5px 5px 0 var(--shadow); }
+  .step-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .num { flex: none; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--line); color: var(--on-accent); font-family: var(--hand); font-weight: 400; font-size: 1.3rem; padding-top: 1px; background: var(--yellow); }
+  .card:nth-of-type(4n+2) .num { background: var(--teal); }
+  .card:nth-of-type(4n+3) .num { background: var(--coral); }
+  .card:nth-of-type(4n+4) .num { background: var(--rose); }
+  .step-head h3 { flex: 1; }
+  .time { font-size: 13px; font-weight: 700; white-space: nowrap; background: var(--sunken); border-radius: 999px; padding: 3px 10px; }
+  .step-body { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .intro { max-width: 760px; margin: -4px 0 4px; }
+  .explain { display: grid; grid-template-columns: 1fr; gap: 2px 16px; margin: 0; font-size: 16px; }
+  @media (min-width: 600px) { .explain { grid-template-columns: 120px 1fr; } }
+  .explain dt { font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding-top: 3px; }
+  .explain dd { margin: 0 0 8px; }
+  .check { margin: 0; font-size: 15px; }
+  .explain dd.small { font-size: 15px; }
+  .start-list { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 4px; }
+  .start-list li::before { content: "→ "; color: var(--red); font-weight: 700; }
+  .start-list a { font-weight: 700; text-decoration-color: var(--red); text-decoration-thickness: 1px; }
+  .start-text { max-width: 848px; margin-top: 40px; }
+  .start-text p { margin: 0 0 18px; }
+  code { font-size: .9em; background: var(--sunken); border-radius: 6px; padding: 1px 6px; }
+  .howto code { background: var(--card); border: 1px solid var(--soft-line); color: var(--ink); }
+  .howto { background: var(--sunken); border: 2px dashed var(--soft-line); border-radius: 16px; padding: 14px 18px; font-size: 15px; }
+  .os-switch:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 2px 0 10px; }
+  .os-q { font-weight: 700; margin-right: 4px; }
+  .os-btn { border: 2px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); padding: 3px 14px; font: 700 14px/1.4 var(--sans); cursor: pointer; box-shadow: 2px 2px 0 var(--shadow); }
+  .os-btn:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--shadow); }
+  .os-btn[aria-pressed="true"] { background: var(--band); color: var(--band-ink); box-shadow: none; transform: translate(2px,2px); cursor: default; }
+  .os-btn[aria-pressed="true"]::before { content: "✓"; font-weight: 800; margin-right: 5px; }
+  .os-btn:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+  .os-steps[data-show] > li[data-os] { display: none; }
+  .os-steps[data-show="win"] > li[data-os="win"], .os-steps[data-show="mac"] > li[data-os="mac"] { display: list-item; }
+  .os-steps[data-show="none"] > li:not(:first-child) { display: none; }
+  .howto-title { font-weight: 800; margin: 0 0 6px; }
+  .howto ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+  .howto ol ol { margin-top: 6px; gap: 4px; list-style: lower-alpha; }
+  .howto-intro { margin-top: 18px; }
+  .howto-lead { margin: 0 0 8px; }
+  .restart .prompt { margin-top: 12px; }
+  .howto-note { margin: 10px 0 0; color: var(--muted); }
+  .why { font-size: 16px; }
+  .why p { margin: 0; }
+  .why p + p { margin-top: 8px; color: var(--muted); }
+  .options { display: grid; gap: 16px; }
+  .opt-title { font-size: 16px; font-weight: 800; margin: 0 0 8px; }
+
+  /* Prompt als Sprechblase */
+  .prompt { position: relative; background: var(--bubble); border: 2px solid var(--line); border-radius: 18px 18px 18px 4px; padding: 44px 16px 14px; }
+  .prompt::before { content: "Das sagst du der KI:"; position: absolute; left: 16px; top: 13px; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .prompt pre { max-width: 642px; margin: 0; white-space: pre-wrap; word-wrap: break-word; font-family: var(--sans); font-size: 1rem; line-height: 1.55; color: var(--on-bubble); font-weight: 600; }
+  .copy {
+    position: absolute; right: 10px; top: 9px; display: inline-flex; align-items: center; gap: 5px;
+    border: 2px solid var(--line); border-radius: 999px; background: var(--coral); color: var(--on-accent);
+    padding: 6px 11px; font: 800 13px/1.2 var(--sans); cursor: pointer; box-shadow: 2px 2px 0 var(--shadow);
+  }
+  .copy:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--shadow); }
+  .copy:active { transform: translate(1px,1px); box-shadow: 0 0 0 var(--shadow); }
+  .copy:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+  .copy svg { width: 14px; height: 14px; }
+  @media (max-width: 420px) {
+  }
+
+
+  .next { margin-top: 44px; background: var(--teal); color: var(--on-accent); border: 2px solid var(--line); border-radius: var(--radius); padding: 22px; box-shadow: 5px 5px 0 var(--shadow); }
+  .next .k { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin: 0; }
+  .next p { margin: 4px 0 0; font-weight: 700; font-size: 19px; }
+
+  .btn { display: inline-block; text-decoration: none; font-weight: 800; border-radius: 999px; padding: 11px 20px; background: var(--coral); color: var(--on-accent); border: 2px solid var(--line); box-shadow: 3px 3px 0 var(--shadow); }
+  .btn:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--shadow); }
+
+  /* Hintergrund */
+  .why-box { max-width: 760px; }
+  .why-box .k { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; }
+  .why-box p { margin: 0; }
+  .sub { font-family: var(--sans); font-weight: 700; font-size: 23px; margin-top: 36px; margin-bottom: 14px; }
+
+  .parts { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 760px) { .parts { grid-template-columns: repeat(3, 1fr); } }
+  .zone p { margin: 0; font-size: 15px; }
+  .parts .zone, .parts .zone.cloud, .parts .zone.pinkzone { background: var(--card); color: var(--ink); }
+  .scribble { width: 58px; height: 76px; color: var(--red); display: block; margin: -4px 0 6px -4px; }
+  .map { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: stretch; }
+  @media (min-width: 760px) { .map { grid-template-columns: 1fr auto 1fr; } }
+  .zone { border: 2px solid var(--line); border-radius: var(--radius); background: var(--yellow); color: var(--on-accent); padding: 18px; box-shadow: 4px 4px 0 var(--shadow); }
+  .zone.cloud { background: var(--teal); }
+  .zone .t { font-weight: 800; margin-bottom: 10px; font-size: 1.08rem; }
+  .zone ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .zone li { border: 2px solid var(--line); border-radius: 14px; padding: 8px 12px; background: #fffdfb; font-size: 15px; }
+  .zone li b { font-weight: 800; }
+  .zone .foot { margin-top: 10px; font-size: 14px; font-weight: 600; }
+  .arrow { display: grid; place-items: center; font-size: 14px; font-weight: 800; text-align: center; padding: 4px 6px; }
+  .arrow span { display: block; }
+  .arrow .a { font-size: 30px; line-height: 1; color: var(--coral); }
+  @media (max-width: 759px) { .arrow .a { transform: rotate(90deg); } }
+
+  .table-wrap { overflow-x: auto; border: 2px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: 4px 4px 0 var(--rose); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 2px dashed var(--soft-line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--on-accent); background: var(--yellow); border-bottom: 2px solid var(--line); }
+  td:first-child { font-weight: 800; white-space: nowrap; }
+
+  .end { padding: 20px 0 0; max-width: 848px; }
+  .end h2 { margin-top: 0; color: var(--band-ink); }
+  .end p { margin: 0; max-width: 760px; }
+  .ph { font-weight: 400; }
+  .kuer { font-weight: 400; }
+  .wave-up { transform: rotate(180deg); margin-top: -1px; margin-bottom: -1px; position: relative; }
+  .foot-band .wrap { padding-top: 30px; padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+  .foot-band footer { margin: 50px 0 0; color: var(--band-ink); display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; }
+  .foot-band footer a { color: var(--band-ink); opacity: .85; }
+  .foot-band footer a:hover { opacity: 1; }
+  .co2 { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+  .co2 sub { font-size: .75em; }
+  .co2-badge { flex: none; display: inline-grid; place-items: center; min-width: 40px; height: 26px; padding: 0 8px; border-radius: 999px; border: 2px solid var(--band-ink); background: var(--yellow); color: var(--on-accent); font-weight: 800; font-size: 13px; box-shadow: 2px 2px 0 var(--red); }
+  footer { margin: 50px 0 40px; font-size: 14px; color: var(--muted); }
+  footer a { color: inherit; }
+
+  @media (prefers-reduced-motion: reduce) { .copy:hover, .btn:hover, .tl-next:hover { transform: none; } .tl-bar i, .tl-chev { transition: none; } }
+
+  .extras-title { margin-top: 40px; }
+  #besser, #extras { scroll-margin-top: 16px; }
+  .extras-lead { margin: 6px 0 0; }
+  .copy.copied { background: var(--blue); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* Zeitleiste: ein Schritt offen, abhaken, Fortschritt */
+  .tl-wrap { margin-top: 14px; }
+  .tl-progress { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 16px; font-weight: 800; font-size: 15px; }
+  .tl-bar { flex: 1 1 160px; max-width: 320px; height: 14px; border: 2px solid var(--line); border-radius: 999px; background: var(--card); overflow: hidden; }
+  .tl-bar i { display: block; height: 100%; width: 0; background: var(--yellow); transition: width .3s; }
+  .tl-reset { border: 0; background: none; color: var(--muted); font: 600 14px var(--sans); text-decoration: underline; cursor: pointer; padding: 4px; }
+  .tl { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  .tl-step { position: relative; background: var(--card); border: 2px solid var(--line); border-radius: var(--radius); box-shadow: 4px 4px 0 var(--shadow); scroll-margin-top: 16px; }
+  .tl-step:not(:last-child)::after { content: ""; position: absolute; left: 38px; top: 100%; width: 3px; height: 16px; background: var(--line); }
+  .tl-h { margin: 0; font-size: inherit; }
+  .tl-head { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; background: none; border: 0; padding: 16px 18px; font: 700 1.3rem/1.25 var(--sans); color: var(--ink); cursor: pointer; border-radius: var(--radius); }
+  .tl-head:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+  .tl-title { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .tl-sum { font: 400 15px/1.45 var(--sans); color: var(--muted); }
+  .tl-step .num { background: var(--yellow); }
+  .tl-ok { display: none; width: 24px; height: 24px; }
+  .tl-tag { flex: none; font: 800 12px/1 var(--sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .tl-chev { flex: none; width: 26px; height: 26px; color: var(--ink); transition: transform .2s; }
+  .tl-step.open .tl-chev { transform: rotate(180deg); }
+  .tl-body { padding: 0 22px 22px; }
+  .tl-gate { margin-top: 18px; padding-top: 16px; border-top: 2px dashed var(--soft-line); display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .tl-q { margin: 0; flex: 1 1 100%; font-size: 15px; }
+  .tl-next { margin-left: auto; }
+  .tl-gate .sh { display: none; }
+  @media (max-width: 480px) { .tl-gate .lg { display: none; } .tl-gate .sh { display: inline; } }
+  .tl-next { border: 2px solid var(--line); border-radius: 999px; background: var(--yellow); color: var(--on-accent); font: 800 15px/1.2 var(--sans); padding: 11px 20px; box-shadow: 3px 3px 0 var(--shadow); cursor: pointer; }
+  .tl-next:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--shadow); }
+  .tl-back { border: 0; background: none; padding: 4px 2px; color: var(--ink); font: 600 15px/1.4 var(--sans); text-decoration: underline; text-decoration-color: var(--coral); text-decoration-thickness: 2px; text-underline-offset: 3px; cursor: pointer; }
+  .tl-back:hover { text-decoration-thickness: 3px; }
+  .tl-next:focus-visible, .tl-back:focus-visible, .tl-reset:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+  .tl-on .tl-step:not(.open) .tl-body { display: none; }
+  .tl-on .tl-step.open .tl-sum { display: none; }
+  .tl-on .tl-step.todo .num { background: var(--card); }
+  .tl-on .tl-step.done .num { background: var(--blue); }
+  .tl-on .tl-step.done .tl-n { display: none; }
+  .tl-on .tl-step.done .tl-ok { display: block; }
+  .tl-on .tl-step.done:not(.open) .tl-sum { display: none; }
+  .tl-on .tl-step.done .tl-tag::after { content: "geschafft"; }
+  .tl-wrap[data-mode="free"] .tl-step.done .tl-next { display: none; }
+  .tl-wrap[data-mode="free"] .tl-step::after { content: none; }
+  .tl-on .tl-step.current { box-shadow: 6px 6px 0 var(--pink); }
+  .tl-on .tl-step.current .tl-tag::after { content: "jetzt"; color: var(--red); }
+  @media (max-width: 480px) {
+    .tl-head { padding: 14px; gap: 12px; font-size: 1.15rem; }
+    .tl-body { padding: 0 14px 16px; }
+    .tl-step:not(:last-child)::after { left: 34px; }
+    .tl-tag { display: none; }
+  }
+  /* Einleitung nie unter die Gesichter */
+  @media (min-width: 760px) { .lead { max-width: min(835px, calc(var(--h1w) + var(--kgap))); } }
+</style>
+</head>
+<body id="top">
+
+<div class="band">
+  <svg class="stars" viewBox="0 0 1280 440" preserveAspectRatio="xMinYMin slice" aria-hidden="true"><circle cx="415" cy="66" r="0.6" fill="#f7f3f8" fill-opacity="0.49"/><circle cx="686" cy="161" r="0.6" fill="#f7f3f8" fill-opacity="0.95"/><circle cx="275" cy="38" r="1.5" fill="#f7f3f8" fill-opacity="0.49"/><circle cx="116" cy="187" r="0.8" fill="#f7f3f8" fill-opacity="0.97"/><circle cx="807" cy="257" r="0.6" fill="#f7f3f8" fill-opacity="0.77"/><circle cx="508" cy="430" r="0.6" fill="#f7f3f8" fill-opacity="0.76"/><circle cx="170" cy="184" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="151" cy="136" r="0.8" fill="#f7f3f8" fill-opacity="0.51"/><circle cx="731" cy="83" r="0.8" fill="#f7f3f8" fill-opacity="0.75"/><circle cx="80" cy="26" r="1" fill="#f7f3f8" fill-opacity="0.72"/><circle cx="681" cy="342" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="750" cy="199" r="1" fill="#f7f3f8" fill-opacity="0.59"/><circle cx="230" cy="343" r="0.8" fill="#f7f3f8" fill-opacity="0.77"/><circle cx="672" cy="385" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="369" cy="431" r="0.8" fill="#f7f3f8" fill-opacity="0.73"/><circle cx="211" cy="151" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="540" cy="423" r="0.8" fill="#f7f3f8" fill-opacity="0.87"/><circle cx="733" cy="385" r="1.2" fill="#f7f3f8" fill-opacity="0.64"/><circle cx="448" cy="219" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="88" cy="41" r="1" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="850" cy="27" r="1" fill="#f7f3f8" fill-opacity="0.81"/><circle cx="1271" cy="362" r="1" fill="#f7f3f8" fill-opacity="0.84"/><circle cx="1135" cy="153" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="455" cy="269" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="75" cy="338" r="0.8" fill="#f7f3f8" fill-opacity="0.86"/><circle cx="509" cy="403" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="103" cy="198" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="356" cy="60" r="1.5" fill="#f7f3f8" fill-opacity="0.93"/><circle cx="356" cy="183" r="1.2" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="487" cy="102" r="0.8" fill="#f7f3f8" fill-opacity="0.55"/><circle cx="297" cy="103" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="1064" cy="80" r="1" fill="#f7f3f8" fill-opacity="0.45"/><circle cx="536" cy="162" r="1.2" fill="#f7f3f8" fill-opacity="0.97"/><circle cx="884" cy="227" r="0.6" fill="#f7f3f8" fill-opacity="0.7"/><circle cx="1115" cy="419" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="502" cy="176" r="0.8" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="513" cy="84" r="1" fill="#f7f3f8" fill-opacity="0.69"/><circle cx="141" cy="264" r="0.8" fill="#f7f3f8" fill-opacity="0.45"/><circle cx="194" cy="45" r="1.2" fill="#f7f3f8" fill-opacity="0.79"/><circle cx="90" cy="91" r="1.5" fill="#f7f3f8" fill-opacity="0.53"/><circle cx="323" cy="153" r="1.2" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="148" cy="215" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="615" cy="137" r="0.8" fill="#f7f3f8" fill-opacity="0.51"/><circle cx="439" cy="116" r="0.8" fill="#f7f3f8" fill-opacity="0.73"/><circle cx="263" cy="419" r="1.2" fill="#f7f3f8" fill-opacity="0.53"/><circle cx="695" cy="12" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="382" cy="283" r="0.8" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="334" cy="161" r="0.8" fill="#f7f3f8" fill-opacity="0.65"/><circle cx="285" cy="238" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="422" cy="98" r="1" fill="#f7f3f8" fill-opacity="0.89"/><circle cx="1047" cy="326" r="1" fill="#f7f3f8" fill-opacity="0.56"/><circle cx="631" cy="322" r="0.6" fill="#f7f3f8" fill-opacity="0.88"/><circle cx="604" cy="85" r="1.2" fill="#f7f3f8" fill-opacity="0.7"/><circle cx="1199" cy="435" r="1.2" fill="#f7f3f8" fill-opacity="0.49"/><circle cx="131" cy="207" r="1.2" fill="#f7f3f8" fill-opacity="0.56"/><circle cx="799" cy="396" r="0.6" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="836" cy="352" r="0.8" fill="#f7f3f8" fill-opacity="0.91"/><circle cx="153" cy="171" r="1" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="229" cy="347" r="1.2" fill="#f7f3f8" fill-opacity="0.5"/><circle cx="1211" cy="318" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="514" cy="417" r="0.8" fill="#f7f3f8" fill-opacity="0.54"/><circle cx="163" cy="67" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="1032" cy="64" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="841" cy="154" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="702" cy="9" r="0.8" fill="#f7f3f8" fill-opacity="0.74"/><circle cx="1195" cy="191" r="1" fill="#f7f3f8" fill-opacity="0.9"/><circle cx="270" cy="111" r="1" fill="#f7f3f8" fill-opacity="0.73"/><circle cx="978" cy="143" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="536" cy="58" r="1.2" fill="#f7f3f8" fill-opacity="0.94"/><circle cx="848" cy="359" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="538" cy="404" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="167" cy="67" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="24" cy="194" r="0.8" fill="#f7f3f8" fill-opacity="0.78"/><circle cx="993" cy="66" r="0.8" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="928" cy="245" r="1.2" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="679" cy="212" r="0.8" fill="#f7f3f8" fill-opacity="0.94"/><circle cx="73" cy="84" r="0.6" fill="#f7f3f8" fill-opacity="0.87"/><circle cx="650" cy="247" r="0.8" fill="#f7f3f8" fill-opacity="0.69"/><circle cx="784" cy="222" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="255" cy="122" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="683" cy="210" r="1" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="1122" cy="415" r="1" fill="#f7f3f8" fill-opacity="0.96"/><circle cx="1143" cy="89" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="176" cy="54" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="404" cy="295" r="1.5" fill="#f7f3f8" fill-opacity="0.49"/><circle cx="857" cy="345" r="0.8" fill="#f7f3f8" fill-opacity="0.97"/><circle cx="824" cy="161" r="1" fill="#f7f3f8" fill-opacity="0.94"/><circle cx="1238" cy="97" r="0.8" fill="#f7f3f8" fill-opacity="0.67"/><circle cx="624" cy="436" r="1" fill="#f7f3f8" fill-opacity="0.54"/><circle cx="552" cy="227" r="1.2" fill="#f7f3f8" fill-opacity="0.68"/><circle cx="456" cy="41" r="1.2" fill="#f7f3f8" fill-opacity="0.46"/><circle cx="709" cy="194" r="0.6" fill="#f7f3f8" fill-opacity="0.66"/><circle cx="662" cy="130" r="0.8" fill="#f7f3f8" fill-opacity="0.51"/><circle cx="1176" cy="101" r="0.8" fill="#f7f3f8" fill-opacity="0.5"/><circle cx="348" cy="399" r="0.8" fill="#f7f3f8" fill-opacity="0.6"/><circle cx="166" cy="186" r="1" fill="#f7f3f8" fill-opacity="0.67"/><circle cx="687" cy="227" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="897" cy="39" r="0.6" fill="#f7f3f8" fill-opacity="0.89"/><circle cx="235" cy="394" r="1" fill="#f7f3f8" fill-opacity="0.97"/><circle cx="812" cy="353" r="0.8" fill="#f7f3f8" fill-opacity="0.78"/><circle cx="285" cy="116" r="0.8" fill="#f7f3f8" fill-opacity="0.7"/><circle cx="434" cy="243" r="1" fill="#f7f3f8" fill-opacity="0.79"/><circle cx="55" cy="312" r="0.8" fill="#f7f3f8" fill-opacity="0.98"/><circle cx="335" cy="80" r="1" fill="#f7f3f8" fill-opacity="0.8"/><circle cx="680" cy="91" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="640" cy="78" r="1.2" fill="#f7f3f8" fill-opacity="0.89"/><circle cx="1273" cy="16" r="0.6" fill="#f7f3f8" fill-opacity="0.85"/><circle cx="705" cy="83" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="314" cy="197" r="1.5" fill="#f7f3f8" fill-opacity="0.81"/><circle cx="699" cy="391" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="394" cy="95" r="1" fill="#f7f3f8" fill-opacity="0.64"/><circle cx="1065" cy="311" r="0.8" fill="#f7f3f8" fill-opacity="0.67"/><circle cx="445" cy="24" r="0.8" fill="#f7f3f8" fill-opacity="0.46"/><circle cx="801" cy="387" r="1.5" fill="#f7f3f8" fill-opacity="0.54"/><circle cx="108" cy="370" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="858" cy="124" r="1" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="58" cy="82" r="1" fill="#f7f3f8" fill-opacity="0.7"/><circle cx="337" cy="423" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="414" cy="15" r="1" fill="#f7f3f8" fill-opacity="0.57"/><circle cx="234" cy="148" r="0.8" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="644" cy="88" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="994" cy="40" r="0.8" fill="#f7f3f8" fill-opacity="0.53"/><circle cx="751" cy="173" r="1" fill="#f7f3f8" fill-opacity="0.62"/><circle cx="298" cy="258" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="1092" cy="68" r="1.5" fill="#f7f3f8" fill-opacity="0.87"/><circle cx="922" cy="217" r="1" fill="#f7f3f8" fill-opacity="0.85"/><circle cx="823" cy="19" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="803" cy="323" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="178" cy="230" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="728" cy="358" r="0.6" fill="#f7f3f8" fill-opacity="0.9"/><circle cx="748" cy="393" r="1" fill="#f7f3f8" fill-opacity="0.5"/><circle cx="54" cy="280" r="0.8" fill="#f7f3f8" fill-opacity="0.66"/><circle cx="578" cy="22" r="0.6" fill="#f7f3f8" fill-opacity="0.79"/><circle cx="871" cy="215" r="0.6" fill="#f7f3f8" fill-opacity="0.7"/><circle cx="90" cy="410" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="118" cy="231" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="323" cy="33" r="1" fill="#f7f3f8" fill-opacity="0.58"/><circle cx="968" cy="102" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="632" cy="168" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="1165" cy="126" r="0.6" fill="#f7f3f8" fill-opacity="0.79"/><circle cx="823" cy="34" r="0.8" fill="#f7f3f8" fill-opacity="0.63"/><circle cx="834" cy="305" r="0.8" fill="#f7f3f8" fill-opacity="0.46"/><circle cx="78" cy="118" r="0.8" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="865" cy="128" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="365" cy="205" r="0.8" fill="#f7f3f8" fill-opacity="1.0"/><circle cx="703" cy="137" r="0.8" fill="#f7f3f8" fill-opacity="0.96"/><circle cx="22" cy="202" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="1239" cy="198" r="1" fill="#f7f3f8" fill-opacity="0.66"/><circle cx="1173" cy="409" r="0.8" fill="#f7f3f8" fill-opacity="0.77"/><circle cx="181" cy="231" r="1.2" fill="#f7f3f8" fill-opacity="0.52"/><circle cx="1050" cy="224" r="0.8" fill="#f7f3f8" fill-opacity="0.84"/><circle cx="296" cy="395" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="504" cy="70" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="872" cy="178" r="0.8" fill="#f7f3f8" fill-opacity="0.68"/><circle cx="481" cy="53" r="1.2" fill="#f7f3f8" fill-opacity="0.45"/><circle cx="961" cy="369" r="0.8" fill="#f7f3f8" fill-opacity="0.97"/><circle cx="251" cy="5" r="1" fill="#f7f3f8" fill-opacity="0.59"/><circle cx="83" cy="172" r="0.8" fill="#f7f3f8" fill-opacity="0.65"/><circle cx="548" cy="121" r="0.6" fill="#f7f3f8" fill-opacity="0.6"/><circle cx="66" cy="291" r="0.8" fill="#f7f3f8" fill-opacity="0.59"/><circle cx="340" cy="225" r="1" fill="#f7f3f8" fill-opacity="0.88"/><circle cx="1005" cy="188" r="0.6" fill="#f7f3f8" fill-opacity="0.9"/><circle cx="808" cy="402" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="703" cy="317" r="0.6" fill="#f7f3f8" fill-opacity="0.96"/><circle cx="526" cy="271" r="0.8" fill="#f7f3f8" fill-opacity="0.8"/><circle cx="366" cy="22" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="163" cy="208" r="1.2" fill="#f7f3f8" fill-opacity="0.6"/><circle cx="327" cy="325" r="1" fill="#f7f3f8" fill-opacity="0.67"/><circle cx="305" cy="213" r="1.5" fill="#f7f3f8" fill-opacity="0.52"/><circle cx="823" cy="33" r="2.6" fill="#f7f3f8" fill-opacity="1"/></svg>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><a href="./">einfachmachen by design</a></div>
+    </div>
+    <header class="hero">
+      <svg class="deko kids" viewBox="0 0 160 272" aria-hidden="true"><defs><clipPath id="p3c"><path d="M102.5 214.6 C102.6 218.6 98.1 222.8 96.6 227.0 C95.1 231.2 96.1 236.7 93.3 239.9 C90.6 243.0 84.4 243.7 80.0 245.9 C75.5 248.0 71.0 252.2 66.6 252.8 C62.3 253.4 58.5 250.1 54.0 249.4 C49.4 248.7 43.4 250.4 39.4 248.5 C35.3 246.6 33.0 241.2 29.8 237.8 C26.6 234.4 21.7 231.9 20.2 228.1 C18.7 224.3 20.8 219.3 20.8 215.0 C20.9 210.8 19.0 206.3 20.5 202.5 C22.0 198.8 27.0 196.2 29.9 192.6 C32.8 189.1 34.0 183.2 38.0 181.2 C41.9 179.2 48.9 181.3 53.8 180.6 C58.7 180.0 63.4 176.4 67.5 177.3 C71.7 178.1 74.7 183.4 78.8 185.6 C82.9 187.9 89.4 187.8 92.2 190.8 C95.0 193.7 93.9 199.3 95.6 203.3 C97.3 207.3 102.3 210.7 102.5 214.6 Z"/></clipPath><mask id="p1m" maskUnits="userSpaceOnUse" x="0" y="0" width="160" height="272"><path d="M31.2 59.8 C29.5 56.1 22.2 54.7 18.2 56.2 C14.3 57.7 9.2 63.5 7.6 68.7 C5.9 74.0 6.8 82.2 8.3 87.7 C9.7 93.3 14.0 101.8 16.3 102.1 C18.6 102.5 20.0 93.8 22.1 89.8 C24.1 85.8 27.3 83.2 28.8 78.2 C30.3 73.2 33.0 63.4 31.2 59.8 Z" fill="white"/><path d="M104.3 60.4 C106.2 56.5 114.8 53.9 118.8 55.2 C122.7 56.6 126.7 62.9 128.2 68.4 C129.7 73.8 129.1 82.3 127.6 87.8 C126.1 93.4 121.6 101.3 119.3 101.5 C117.0 101.8 115.7 93.2 113.8 89.4 C111.9 85.5 109.2 83.5 107.6 78.6 C106.0 73.8 102.5 64.3 104.3 60.4 Z" fill="white"/><path d="M28.2 78.0 C28.5 70.1 29.3 59.5 33.5 52.2 C37.7 45.0 46.0 38.0 53.6 34.4 C61.2 30.8 71.2 28.9 79.0 30.6 C86.8 32.4 95.4 38.4 100.3 44.8 C105.2 51.3 107.4 61.2 108.5 69.4 C109.6 77.6 109.2 86.8 106.9 93.9 C104.6 101.0 104.7 108.9 94.9 112.0 C85.2 115.1 58.9 114.6 48.4 112.6 C37.8 110.5 34.8 105.5 31.4 99.7 C28.1 94.0 27.8 85.9 28.2 78.0 Z" fill="white"/><path d="M38.1 80.2 C38.3 73.9 38.7 67.3 43.7 63.6 C48.8 59.9 60.3 58.0 68.3 58.1 C76.3 58.3 86.7 60.6 91.6 64.4 C96.4 68.3 97.3 74.9 97.6 81.0 C97.9 87.1 96.5 95.2 93.5 101.1 C90.4 107.0 85.6 113.9 79.3 116.5 C73.0 119.1 61.9 119.4 55.8 116.8 C49.6 114.2 45.5 107.2 42.5 101.1 C39.5 95.0 37.8 86.5 38.1 80.2 Z" fill="black"/><path d="M34.9 80.8 C34.1 76.5 33.1 59.9 37.2 52.7 C41.4 45.6 51.6 40.2 59.9 38.0 C68.1 35.8 79.8 36.1 86.9 39.5 C93.9 43.0 99.8 53.1 102.0 58.8 C104.3 64.5 102.3 73.0 100.4 73.9 C98.5 74.9 94.2 64.7 90.9 64.6 C87.5 64.5 83.6 73.4 80.2 73.3 C76.7 73.2 73.7 63.9 70.2 63.9 C66.8 63.9 62.8 73.0 59.5 73.2 C56.1 73.4 53.0 64.5 50.1 65.3 C47.1 66.2 44.4 75.7 41.9 78.3 C39.4 80.9 35.7 85.1 34.9 80.8 Z" fill="white"/></mask></defs><path d="M99.9 112.1 C108.0 112.3 119.0 112.6 124.8 116.9 C130.7 121.3 133.4 131.0 135.0 138.2 C136.6 145.4 135.2 153.0 134.4 160.0 C133.6 167.1 133.5 175.3 130.3 180.6 C127.1 185.8 120.4 188.8 115.2 191.6 C110.0 194.4 104.3 197.7 99.2 197.6 C94.0 197.5 89.1 193.9 84.4 191.1 C79.7 188.3 74.1 186.1 71.0 180.9 C67.8 175.8 66.4 167.5 65.3 160.2 C64.2 152.9 62.5 144.4 64.3 137.0 C66.1 129.7 70.1 120.3 76.1 116.1 C82.0 112.0 91.8 112.0 99.9 112.1 Z" fill="#e88dc9"/><path d="M73.4 149.5 C73.7 142.6 74.7 134.4 79.2 129.9 C83.6 125.4 93.1 122.6 99.9 122.6 C106.7 122.7 115.7 125.6 120.0 130.3 C124.4 134.9 125.7 143.4 126.0 150.3 C126.3 157.2 124.4 165.8 121.9 171.6 C119.4 177.4 116.1 182.8 110.9 184.9 C105.7 187.0 96.2 186.6 90.6 184.4 C85.1 182.1 80.5 177.3 77.7 171.5 C74.8 165.7 73.2 156.5 73.4 149.5 Z" fill="#a8693f"/><g fill="none" stroke="#241a33" stroke-linecap="round" stroke-width="3.0"><path d="M83.0 156.0 Q90.0 149.0 97.0 156.0"/><path d="M103.0 156.0 Q110.0 149.0 117.0 156.0"/><path d="M91.0 167.0 Q100.0 176.0 109.0 167.0"/></g><ellipse cx="83.0" cy="164.0" rx="5.0" ry="3.5" fill="#e88dc9" opacity=".9"/><ellipse cx="117.0" cy="164.0" rx="5.0" ry="3.5" fill="#e88dc9" opacity=".9"/><path d="M102.5 214.6 C102.6 218.6 98.1 222.8 96.6 227.0 C95.1 231.2 96.1 236.7 93.3 239.9 C90.6 243.0 84.4 243.7 80.0 245.9 C75.5 248.0 71.0 252.2 66.6 252.8 C62.3 253.4 58.5 250.1 54.0 249.4 C49.4 248.7 43.4 250.4 39.4 248.5 C35.3 246.6 33.0 241.2 29.8 237.8 C26.6 234.4 21.7 231.9 20.2 228.1 C18.7 224.3 20.8 219.3 20.8 215.0 C20.9 210.8 19.0 206.3 20.5 202.5 C22.0 198.8 27.0 196.2 29.9 192.6 C32.8 189.1 34.0 183.2 38.0 181.2 C41.9 179.2 48.9 181.3 53.8 180.6 C58.7 180.0 63.4 176.4 67.5 177.3 C71.7 178.1 74.7 183.4 78.8 185.6 C82.9 187.9 89.4 187.8 92.2 190.8 C95.0 193.7 93.9 199.3 95.6 203.3 C97.3 207.3 102.3 210.7 102.5 214.6 Z" fill="#d0625f"/><g clip-path="url(#p3c)" fill="none" stroke="#241a33" stroke-linecap="round" stroke-linejoin="round"><path d="M85.8 128.9 L93.2 144.5 L98.4 159.3 L105.0 173.0 L113.2 187.5 L119.7 202.0 L128.2 214.5 L137.7 228.0 L145.7 240.9" stroke-width="0.7"/><path d="M80.0 132.5 L86.4 147.1 L93.6 161.8 L99.7 176.8 L106.3 189.9 L115.2 204.8 L122.4 217.5 L131.8 232.1 L139.7 245.4" stroke-width="1.2"/><path d="M74.4 134.9 L79.9 151.0 L86.6 165.2 L93.3 179.9 L101.0 193.2 L108.1 207.8 L116.2 220.7 L125.6 235.1 L134.5 247.5" stroke-width="1.2"/><path d="M68.8 137.8 L75.6 152.2 L81.5 167.4 L88.8 181.4 L95.7 196.8 L104.4 210.4 L112.2 223.9 L119.9 236.4 L128.5 251.2" stroke-width="1.1"/><path d="M62.1 141.9 L68.9 156.9 L75.0 171.9 L81.3 185.7 L89.6 200.4 L97.3 214.0 L105.6 228.0 L113.5 241.1 L123.2 254.7" stroke-width="0.9"/><path d="M57.1 145.2 L62.8 159.7 L69.1 174.7 L75.0 189.2 L83.6 203.8 L90.9 216.9 L99.2 230.8 L107.3 244.7 L115.6 257.9" stroke-width="0.6"/><path d="M50.6 147.8 L57.0 163.0 L63.2 178.3 L69.4 191.3 L76.6 206.6 L84.2 219.7 L93.6 234.1 L101.4 247.9 L110.1 260.9" stroke-width="0.7"/><path d="M45.6 151.8 L51.8 165.7 L57.7 180.3 L63.7 195.0 L72.0 209.8 L79.5 223.8 L87.0 236.2 L95.9 249.8 L104.4 263.4" stroke-width="1.0"/><path d="M39.1 154.7 L46.3 168.9 L51.2 182.8 L59.2 197.3 L66.1 212.3 L73.2 226.6 L81.0 239.2 L90.3 252.4 L99.7 266.1" stroke-width="0.7"/><path d="M35.0 156.6 L41.1 171.6 L47.7 186.8 L54.2 200.0 L61.1 214.2 L68.1 228.6 L77.5 241.7 L85.4 255.4 L94.9 269.0" stroke-width="1.0"/><path d="M28.4 160.4 L35.3 174.1 L41.7 189.7 L47.1 203.8 L55.1 218.7 L62.4 232.0 L71.5 246.0 L80.2 258.9 L88.5 271.8" stroke-width="1.1"/><path d="M22.4 163.7 L27.8 178.8 L35.4 193.5 L41.4 207.7 L48.2 222.1 L56.8 235.1 L63.8 248.9 L73.2 262.8 L81.9 275.0" stroke-width="1.2"/><path d="M18.0 165.3 L23.3 181.1 L29.3 194.7 L36.6 210.1 L44.4 224.2 L52.3 237.8 L60.5 250.8 L68.0 264.9 L76.9 278.6" stroke-width="1.0"/><path d="M12.3 169.0 L17.6 183.5 L24.8 198.9 L30.4 213.3 L38.8 227.0 L46.0 240.4 L54.1 254.5 L62.9 267.2 L72.3 281.3" stroke-width="0.9"/><path d="M5.5 172.3 L11.8 186.3 L17.9 201.5 L25.3 216.8 L31.4 230.3 L38.9 244.1 L48.2 258.5 L56.3 271.0 L64.7 284.8" stroke-width="1.2"/><path d="M1.0 174.1 L6.2 189.2 L13.3 204.0 L19.5 218.9 L26.3 233.3 L34.1 246.8 L42.5 259.9 L51.6 273.8 L60.1 287.1" stroke-width="1.0"/><path d="M-4.8 177.6 L2.0 192.2 L8.7 207.0 L15.4 220.9 L22.4 236.0 L30.4 249.1 L37.7 263.7 L46.2 277.3 L56.0 289.2" stroke-width="0.8"/><path d="M-10.9 180.1 L-3.9 195.4 L2.4 209.5 L8.5 224.9 L15.1 238.3 L23.9 253.3 L32.6 265.7 L40.4 280.2 L49.2 293.4" stroke-width="0.7"/><path d="M-15.8 182.5 L-9.0 198.0 L-2.6 212.1 L3.4 226.6 L11.7 242.1 L19.6 254.5 L26.4 269.5 L35.7 282.7 L44.3 295.5" stroke-width="1.0"/><path d="M-20.5 185.4 L-14.3 201.5 L-8.8 215.5 L-1.2 229.9 L5.1 243.7 L13.4 257.3 L22.2 272.2 L30.5 285.8 L39.2 298.4" stroke-width="1.0"/></g><path d="M30.9 228.7 C30.9 222.0 29.0 215.7 33.9 211.8 C38.8 207.8 51.7 205.3 60.4 205.1 C69.2 204.9 81.2 206.9 86.2 210.9 C91.3 214.8 90.7 221.9 90.7 228.8 C90.6 235.7 89.3 246.2 86.0 252.2 C82.8 258.1 77.2 262.4 71.2 264.4 C65.1 266.3 55.9 265.9 49.7 263.7 C43.5 261.6 37.2 257.5 34.0 251.6 C30.9 245.8 30.9 235.3 30.9 228.7 Z" fill="#6f8ce6"/><g fill="none" stroke="#241a33" stroke-width="2.8"><circle cx="48.2" cy="229.2" r="8.6"/><circle cx="71.8" cy="229.2" r="8.6"/><path d="M56.8 228.1 L63.2 228.1"/></g><g fill="none" stroke="#241a33" stroke-linecap="round" stroke-width="2.8"><path d="M44.0 231.3 Q48.2 226.0 52.5 231.3"/><path d="M67.5 231.3 Q71.8 226.0 76.0 231.3"/></g><ellipse cx="60.0" cy="250.6" rx="4.8" ry="5.6" fill="#241a33"/><path d="M31.2 59.8 C29.5 56.1 22.2 54.7 18.2 56.2 C14.3 57.7 9.2 63.5 7.6 68.7 C5.9 74.0 6.8 82.2 8.3 87.7 C9.7 93.3 14.0 101.8 16.3 102.1 C18.6 102.5 20.0 93.8 22.1 89.8 C24.1 85.8 27.3 83.2 28.8 78.2 C30.3 73.2 33.0 63.4 31.2 59.8 Z" fill="#edb33c"/><path d="M104.3 60.4 C106.2 56.5 114.8 53.9 118.8 55.2 C122.7 56.6 126.7 62.9 128.2 68.4 C129.7 73.8 129.1 82.3 127.6 87.8 C126.1 93.4 121.6 101.3 119.3 101.5 C117.0 101.8 115.7 93.2 113.8 89.4 C111.9 85.5 109.2 83.5 107.6 78.6 C106.0 73.8 102.5 64.3 104.3 60.4 Z" fill="#edb33c"/><path d="M28.2 78.0 C28.5 70.1 29.3 59.5 33.5 52.2 C37.7 45.0 46.0 38.0 53.6 34.4 C61.2 30.8 71.2 28.9 79.0 30.6 C86.8 32.4 95.4 38.4 100.3 44.8 C105.2 51.3 107.4 61.2 108.5 69.4 C109.6 77.6 109.2 86.8 106.9 93.9 C104.6 101.0 104.7 108.9 94.9 112.0 C85.2 115.1 58.9 114.6 48.4 112.6 C37.8 110.5 34.8 105.5 31.4 99.7 C28.1 94.0 27.8 85.9 28.2 78.0 Z" fill="#edb33c"/><path d="M38.1 80.2 C38.3 73.9 38.7 67.3 43.7 63.6 C48.8 59.9 60.3 58.0 68.3 58.1 C76.3 58.3 86.7 60.6 91.6 64.4 C96.4 68.3 97.3 74.9 97.6 81.0 C97.9 87.1 96.5 95.2 93.5 101.1 C90.4 107.0 85.6 113.9 79.3 116.5 C73.0 119.1 61.9 119.4 55.8 116.8 C49.6 114.2 45.5 107.2 42.5 101.1 C39.5 95.0 37.8 86.5 38.1 80.2 Z" fill="#f7f3f8"/><path d="M34.9 80.8 C34.1 76.5 33.1 59.9 37.2 52.7 C41.4 45.6 51.6 40.2 59.9 38.0 C68.1 35.8 79.8 36.1 86.9 39.5 C93.9 43.0 99.8 53.1 102.0 58.8 C104.3 64.5 102.3 73.0 100.4 73.9 C98.5 74.9 94.2 64.7 90.9 64.6 C87.5 64.5 83.6 73.4 80.2 73.3 C76.7 73.2 73.7 63.9 70.2 63.9 C66.8 63.9 62.8 73.0 59.5 73.2 C56.1 73.4 53.0 64.5 50.1 65.3 C47.1 66.2 44.4 75.7 41.9 78.3 C39.4 80.9 35.7 85.1 34.9 80.8 Z" fill="#edb33c"/><g mask="url(#p1m)" fill="none" stroke="#241a33" stroke-linecap="round" stroke-linejoin="round"><path d="M101.2 -37.2 L109.5 -18.5 L118.1 0.1 L127.1 18.9 L135.9 35.7 L144.6 54.4 L155.9 71.3 L165.8 87.9 L177.1 105.4" stroke-width="1.0"/><path d="M96.1 -34.3 L103.4 -14.6 L112.7 3.6 L120.0 20.5 L129.6 39.0 L139.8 56.1 L149.9 73.4 L159.8 91.5 L171.3 108.4" stroke-width="0.9"/><path d="M90.0 -31.3 L98.9 -12.0 L106.1 5.2 L116.0 24.2 L125.1 41.4 L134.3 59.1 L145.1 76.6 L155.4 94.8 L165.7 111.1" stroke-width="1.1"/><path d="M84.1 -28.0 L91.7 -8.7 L100.0 8.4 L109.4 27.2 L118.8 44.8 L128.6 62.1 L137.9 80.4 L148.3 97.0 L160.1 114.6" stroke-width="0.8"/><path d="M79.5 -25.0 L87.6 -7.5 L96.4 11.6 L105.4 30.4 L114.6 47.5 L124.1 64.9 L133.6 82.4 L145.1 100.3 L154.8 116.5" stroke-width="0.9"/><path d="M74.5 -22.9 L82.3 -4.1 L91.6 14.2 L100.3 32.4 L108.4 50.7 L119.3 67.5 L128.1 85.2 L139.5 102.5 L151.0 119.6" stroke-width="1.2"/><path d="M70.4 -19.9 L77.7 -2.5 L87.1 17.1 L94.7 34.9 L104.0 53.0 L114.5 69.8 L124.0 88.0 L135.1 105.1 L145.7 121.5" stroke-width="1.3"/><path d="M64.6 -17.3 L73.1 1.5 L81.7 19.4 L90.2 37.9 L99.5 56.1 L109.1 73.8 L119.5 90.8 L129.4 108.0 L140.7 124.6" stroke-width="0.9"/><path d="M60.5 -14.1 L68.0 3.0 L76.0 21.8 L84.8 40.8 L93.6 57.7 L103.4 75.8 L114.7 92.4 L124.2 110.0 L135.8 127.8" stroke-width="0.6"/><path d="M55.1 -13.0 L63.3 6.3 L72.2 23.9 L80.2 42.1 L89.4 60.8 L99.3 78.1 L110.3 95.3 L120.0 113.1 L131.8 129.3" stroke-width="1.0"/><path d="M49.3 -9.7 L56.7 10.0 L66.2 27.4 L74.5 45.8 L83.2 64.5 L93.6 80.9 L102.7 98.6 L113.9 116.3 L125.3 133.0" stroke-width="0.7"/><path d="M44.5 -7.2 L53.5 11.7 L61.4 30.9 L69.5 48.3 L78.5 66.6 L88.0 84.3 L99.5 101.6 L108.9 117.9 L120.7 134.6" stroke-width="0.9"/><path d="M40.3 -3.9 L48.2 14.2 L56.4 32.7 L65.3 50.4 L74.3 68.4 L83.6 86.6 L93.2 104.4 L104.0 120.7 L114.4 137.8" stroke-width="0.9"/><path d="M33.6 -0.6 L41.3 17.4 L50.1 36.7 L59.4 54.3 L67.3 71.8 L78.1 89.2 L88.1 106.9 L97.8 124.9 L109.8 140.7" stroke-width="1.0"/><path d="M28.8 1.7 L36.7 19.9 L45.2 38.8 L53.6 56.2 L63.6 74.3 L73.6 92.3 L83.5 109.2 L94.2 126.0 L103.9 143.1" stroke-width="1.1"/><path d="M22.7 4.5 L31.9 23.3 L39.0 41.1 L47.7 59.1 L57.3 76.9 L67.8 95.1 L77.4 112.8 L88.4 130.2 L98.6 146.5" stroke-width="0.9"/><path d="M18.8 7.3 L27.8 25.9 L35.6 44.0 L43.2 61.7 L52.9 80.1 L62.3 97.3 L73.1 115.3 L84.2 132.2 L93.9 149.5" stroke-width="1.2"/><path d="M13.3 9.8 L21.1 28.7 L30.7 46.7 L39.0 65.4 L47.3 83.5 L57.7 99.9 L67.0 117.3 L78.4 135.2 L88.8 152.6" stroke-width="0.9"/><path d="M7.7 13.4 L15.8 31.7 L24.8 49.6 L33.5 67.2 L43.2 86.3 L52.8 103.3 L61.9 121.0 L72.7 138.3 L83.5 154.8" stroke-width="1.2"/><path d="M3.8 14.4 L11.0 33.0 L20.9 52.6 L29.0 69.8 L38.2 88.4 L47.5 105.7 L58.3 122.2 L68.0 140.0 L78.7 157.0" stroke-width="1.0"/><path d="M-0.9 17.1 L7.3 35.7 L15.7 53.6 L24.4 72.0 L34.1 90.6 L43.0 107.9 L53.5 125.7 L64.3 142.9 L74.6 160.4" stroke-width="1.2"/><path d="M-7.1 20.6 L1.2 39.9 L9.5 57.6 L18.0 76.4 L27.0 92.9 L37.4 111.9 L47.6 128.8 L58.2 145.5 L68.7 162.1" stroke-width="0.7"/><path d="M-12.1 23.3 L-4.8 42.3 L4.3 59.9 L12.6 78.3 L21.7 95.7 L32.5 114.8 L42.3 132.0 L52.5 149.0 L63.0 166.0" stroke-width="1.0"/><path d="M-18.9 27.2 L-10.8 45.3 L-1.2 62.8 L6.4 81.5 L15.7 99.0 L26.3 117.8 L35.7 134.4 L46.6 151.1 L56.5 169.5" stroke-width="0.8"/><path d="M-22.9 30.3 L-15.5 47.6 L-7.5 67.1 L2.1 84.1 L11.2 102.3 L20.3 119.6 L31.2 138.3 L40.7 154.8 L51.5 172.3" stroke-width="0.6"/><path d="M-27.7 31.7 L-19.3 51.0 L-11.3 68.2 L-2.7 87.7 L6.1 104.2 L15.5 122.2 L26.4 139.3 L36.2 156.6 L47.8 174.5" stroke-width="0.9"/><path d="M-33.1 35.1 L-26.0 53.1 L-16.6 72.1 L-9.0 90.2 L-0.1 108.6 L10.2 125.5 L20.5 142.1 L31.2 159.6 L41.4 177.5" stroke-width="0.7"/><path d="M-38.1 37.1 L-30.8 56.1 L-22.6 75.0 L-12.7 91.8 L-4.4 110.8 L5.2 128.7 L15.6 144.9 L26.3 162.8 L36.8 179.8" stroke-width="1.1"/></g><g fill="none" stroke="#241a33" stroke-linecap="round" stroke-width="3.0"><path d="M49.0 86.0 Q56.0 79.0 63.0 86.0"/><path d="M73.0 86.0 Q80.0 79.0 87.0 86.0"/><path d="M58.0 98.0 Q68.0 108.0 78.0 98.0"/></g><ellipse cx="48.0" cy="95.0" rx="5.5" ry="3.8" fill="#e88dc9" opacity=".8"/><ellipse cx="88.0" cy="95.0" rx="5.5" ry="3.8" fill="#e88dc9" opacity=".8"/><path d="M32.2 64.7 C32.9 66.3 33.1 68.3 32.8 69.6 C32.6 70.8 31.7 72.0 30.8 72.3 C29.8 72.6 28.1 72.3 26.9 71.5 C25.8 70.6 24.5 68.8 23.9 67.3 C23.2 65.9 22.9 63.9 23.3 62.7 C23.6 61.4 24.9 60.1 25.8 59.7 C26.8 59.3 28.0 59.4 29.1 60.3 C30.2 61.1 31.6 63.2 32.2 64.7 Z" fill="#d0625f"/><path d="M112.0 67.6 C111.5 69.1 110.4 70.5 109.3 71.4 C108.2 72.2 106.7 73.0 105.7 72.7 C104.7 72.5 103.7 71.3 103.4 69.9 C103.0 68.4 103.0 65.8 103.5 64.2 C104.0 62.6 105.2 61.1 106.3 60.3 C107.5 59.5 109.3 59.0 110.3 59.4 C111.4 59.8 112.2 61.3 112.5 62.7 C112.8 64.0 112.5 66.2 112.0 67.6 Z" fill="#d0625f"/><path d="M147.6 27.4 L149.6 32.5 L155.3 33.7 L149.2 35.4 L147.5 40.8 L146.6 35.6 L140.8 34.1 L146.0 32.8 Z" fill="#edb33c"/><path d="M11.7 133.8 L13.0 138.9 L18.3 140.3 L12.9 141.2 L11.9 145.7 L11.2 140.9 L6.0 140.3 L11.2 138.3 Z" fill="#edb33c"/><path d="M148.0 223.2 L148.6 226.6 L153.4 227.6 L149.0 228.9 L147.9 232.6 L146.4 229.6 L143.3 228.2 L146.6 226.7 Z" fill="#edb33c"/><path d="M12.1 17.7 L12.8 21.6 L15.9 21.8 L13.4 23.0 L11.5 25.9 L11.3 22.4 L7.8 22.2 L11.5 21.2 Z" fill="#edb33c"/></svg>
+      <span class="eyebrow">Für Schüler:innen ab 13 · kostenlos</span>
+      <h1>Lerne mit KI arbeiten und entwickle dir einen Vokabeltrainer</h1>
+      <p class="lead">Du sagst der KI, was dein Vokabeltrainer können soll, probierst ihn aus und machst ihn immer besser. So lernst du, wie man mit KI etwas Eigenes baut. Und am Ende hast du einen Trainer für deinen nächsten Vokabeltest.</p>
+    </header>
+  </div>
+</div>
+<svg class="wave" viewBox="0 0 1200 36" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 0h1200v12c-100 0-100 22-200 22S900 12 800 12 700 34 600 34 500 12 400 12 300 34 200 34 100 12 0 12z"/></svg>
+
+<main class="wrap">
+
+  <div class="start-text">
+    <p>KI-Chats sind ab 13 Jahren erlaubt, bis 18 brauchst du noch das Okay deiner Eltern. Frag zu Hause nach, bevor du dich anmeldest oder macht es gemeinsam. Und: Gib der KI keine privaten Daten wie deinen vollen Namen, deine Adresse oder Passwörter.</p>
+    <ul class="start-list">
+      <li>Greif dir einen Rechner mit Browser</li>
+      <li>einen KI-Chat, der ab 13 Jahren erlaubt ist wie <a href="https://chat.mistral.ai/" target="_blank" rel="noopener">Mistral</a> oder <a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT</a></li>
+      <li>die Vokabeln, die du lernen möchtest</li>
+    </ul>
+    <p>Du gehst die Schritte nacheinander durch. Offen ist immer der Schritt, an dem du gerade bist. Oben steht, was passiert und warum. Darunter steht der Satz, den du der KI schickst. Kopier ihn in den KI-Chat und schick ihn ab. Prüf dann, ob es geklappt hat, und hak den Schritt ab. Willst du noch mal etwas nachlesen? Klick einfach auf einen Schritt oder auf „Zurück“.</p>
+  </div>
+
+  <h2>Jetzt bist du dran</h2>
+
+  <div class="tl-wrap" data-key="start" data-mode="seq" data-after="besser">
+    <div class="tl-progress"><span class="tl-count" aria-live="polite">0 von 5 geschafft</span><span class="tl-bar" aria-hidden="true"><i></i></span><button type="button" class="tl-reset" hidden>Von vorn</button></div>
+    <ol class="tl">
+      <li class="tl-step" data-step="1" id="schritt-1">
+        <h3 class="tl-h"><button type="button" class="tl-head" aria-expanded="true" aria-controls="tl-body-1">
+          <span class="num tl-num"><span class="tl-n">1</span><svg class="tl-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tl-title">Deinen Plan erklären<span class="tl-sum">Du erklärst der KI, wer du bist und was ihr zusammen baut.</span></span>
+          <span class="tl-tag"></span><svg class="tl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button></h3>
+        <div class="tl-body" id="tl-body-1">
+          <div class="step-body">
+            <dl class="explain"><dt>Was passiert</dt><dd>Du erklärst der KI, wer du bist und was ihr zusammen baut.</dd><dt>Warum</dt><dd>Dann antwortet sie einfach, baut alles in eine einzige Datei und wartet nach jedem Schritt auf dich, statt alles auf einmal zu machen.</dd></dl>
+            <div class="prompt"><pre>Ich bin Schüler:in und kann nicht programmieren. Wir bauen zusammen Schritt für Schritt einen Vokabeltrainer. Er soll eine einzige HTML-Datei sein, die ich im Browser öffnen kann. Erklär mir alles kurz und einfach. Warte nach jedem Schritt auf meine nächste Nachricht. Wenn du etwas änderst, gib mir immer die ganze Datei. Bau jetzt noch nichts, sag mir nur kurz, ob du alles verstanden hast.</pre></div>
+          </div>
+          <div class="tl-gate">
+            <p class="tl-q"><b>Hat es geklappt?</b> Ja, wenn die KI alles bestätigt und auf deine Vokabeln wartet. Schickt sie schon Code oder sagt, du sollst etwas speichern? Kein Problem, mach einfach mit Schritt 2 weiter. Gespeichert wird erst in Schritt 4.</p>
+            <button type="button" class="tl-next"><span class="lg">Ja, weiter zu Schritt 2</span><span class="sh">Weiter</span></button>
+          </div>
+        </div>
+      </li>
+      <li class="tl-step" data-step="2" id="schritt-2">
+        <h3 class="tl-h"><button type="button" class="tl-head" aria-expanded="true" aria-controls="tl-body-2">
+          <span class="num tl-num"><span class="tl-n">2</span><svg class="tl-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tl-title">Deine Vokabeln schicken<span class="tl-sum">Du schickst der KI deine Vokabeln, ein Paar pro Zeile, mit Bindestrich dazwischen.</span></span>
+          <span class="tl-tag"></span><svg class="tl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button></h3>
+        <div class="tl-body" id="tl-body-2">
+          <div class="step-body">
+            <dl class="explain"><dt>Was passiert</dt><dd>Du schickst der KI deine Vokabeln, ein Paar pro Zeile, mit Bindestrich dazwischen.</dd><dt>Warum</dt><dd>Das ist die <b>Liste</b>, mit der dein Vokabeltrainer später übt. Du gibst sie der KI zuerst allein, damit sie deine Wörter kennt, bevor sie etwas baut.</dd><dt>Tipp</dt><dd class="small">Hast du eigene Vokabeln? Dann tausch die Beispielwörter im Chat gegen deine aus, bevor du abschickst. Klappt mit jeder Sprache, nicht nur Englisch.</dd></dl>
+            <div class="prompt"><pre>Das sind meine Vokabeln. Bau noch nichts, sag mir nur kurz, ob du alle verstanden hast.
+apple - Apfel
+house - Haus
+friend - Freund
+school - Schule
+dog - Hund
+water - Wasser
+green - grün
+to run - rennen
+tomorrow - morgen
+beautiful - schön</pre></div>
+          </div>
+          <div class="tl-gate">
+            <p class="tl-q"><b>Hat es geklappt?</b> Ja, wenn die KI deine Vokabeln aufzählt oder bestätigt und noch nichts baut.</p>
+            <button type="button" class="tl-back">← <span class="lg">Zurück zu Schritt 1</span><span class="sh">Zurück</span></button>
+            <button type="button" class="tl-next"><span class="lg">Ja, weiter zu Schritt 3</span><span class="sh">Weiter</span></button>
+          </div>
+        </div>
+      </li>
+      <li class="tl-step" data-step="3" id="schritt-3">
+        <h3 class="tl-h"><button type="button" class="tl-head" aria-expanded="true" aria-controls="tl-body-3">
+          <span class="num tl-num"><span class="tl-n">3</span><svg class="tl-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tl-title">Die erste Version bauen<span class="tl-sum">Du beschreibst genau, wie dein Trainer funktionieren soll. Die KI schreibt daraus das Programm, mit deinen Vokabeln von eben.</span></span>
+          <span class="tl-tag"></span><svg class="tl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button></h3>
+        <div class="tl-body" id="tl-body-3">
+          <div class="step-body">
+            <dl class="explain"><dt>Was passiert</dt><dd>Du beschreibst genau, wie dein Trainer funktionieren soll. Die KI schreibt daraus das Programm, mit deinen Vokabeln von eben.</dd><dt>Warum</dt><dd>Die KI baut genau das, was du beschreibst. Deshalb steht im Satz jeder Ablauf einzeln: Wort zeigen, Antwort tippen, prüfen, Punkte zählen.</dd></dl>
+            <div class="prompt"><pre>Bau mir jetzt die erste Version. So soll sie funktionieren:
+- Der Vokabeltrainer zeigt ein englisches Wort aus meiner Liste.
+- Ich tippe die deutsche Bedeutung in ein Eingabefeld und bestätige mit Enter.
+- Der Vokabeltrainer sagt mir, ob es richtig oder falsch war.
+- Bei falscher Eingabe wird ein freundlicher Hinweis gezeigt und die richtige Lösung.
+- Dann kommt das nächste Wort.
+- Oben steht, wie viele Punkte ich habe.
+- Jedes Wort kommt nur einmal dran. Wenn alle Wörter durch sind, hört der Trainer auf und zeigt mir meine Punkte.
+- Nimm dafür meine Vokabeln von eben.</pre></div>
+          </div>
+          <div class="tl-gate">
+            <p class="tl-q"><b>Hat es geklappt?</b> Ja, wenn die KI dir das Programm als langen Textblock gibt, der mit <code>&lt;!DOCTYPE html&gt;</code> anfängt.</p>
+            <button type="button" class="tl-back">← <span class="lg">Zurück zu Schritt 2</span><span class="sh">Zurück</span></button>
+            <button type="button" class="tl-next"><span class="lg">Ja, weiter zu Schritt 4</span><span class="sh">Weiter</span></button>
+          </div>
+        </div>
+      </li>
+      <li class="tl-step" data-step="4" id="schritt-4">
+        <h3 class="tl-h"><button type="button" class="tl-head" aria-expanded="true" aria-controls="tl-body-4">
+          <span class="num tl-num"><span class="tl-n">4</span><svg class="tl-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tl-title">Speichern und öffnen<span class="tl-sum">Du speicherst das Programm als Datei auf deinem Rechner und öffnest sie im Browser.</span></span>
+          <span class="tl-tag"></span><svg class="tl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button></h3>
+        <div class="tl-body" id="tl-body-4">
+          <div class="step-body">
+            <dl class="explain"><dt>Was passiert</dt><dd>Du speicherst das Programm als Datei auf deinem Rechner und öffnest sie im Browser.</dd><dt>Warum</dt><dd>Im Chat ist dein Trainer nur ein langer Text. Als Datei wird daraus ein Programm, das du jederzeit öffnen kannst, auch wenn der Chat zu ist.</dd></dl>
+            <div class="howto">
+        <p class="howto-title">So speicherst du die Datei</p>
+        <div class="os-switch" role="group" aria-label="Welchen Rechner hast du?" hidden>
+          <span class="os-q">Welchen Rechner hast du?</span>
+          <button type="button" class="os-btn" data-os="win" aria-pressed="false">Windows</button>
+          <button type="button" class="os-btn" data-os="mac" aria-pressed="false">Mac</button>
+        </div>
+        <ol class="os-steps">
+          <li>Klick in der KI beim Programm auf <b>Kopieren</b>.</li>
+          <li data-os="win"><b>Windows:</b>
+            <ol>
+              <li>Klick unten in der Taskleiste auf das <b>Windows-Zeichen</b>.</li>
+              <li>Tippe „Editor“ und drück <b>Enter</b>.</li>
+              <li>Füge das Programm mit <b>Strg + V</b> ein.</li>
+              <li>Klick oben auf <b>Datei</b> und dann auf <b>Speichern unter</b>.</li>
+              <li>Klick links auf <b>Desktop</b>.</li>
+              <li>Stell unten den Dateityp auf <b>Alle Dateien</b>.</li>
+              <li>Nenn die Datei <code>vokabeltrainer.html</code> und klick auf <b>Speichern</b>.</li>
+            </ol>
+          </li>
+          <li data-os="mac"><b>Mac:</b>
+            <ol>
+              <li>Drück <b>cmd + Leertaste</b>, tippe „TextEdit“ und drück <b>Enter</b>.</li>
+              <li>Ist noch kein leeres Dokument offen, klick auf <b>Neues Dokument</b>.</li>
+              <li>Klick ganz oben am Bildschirmrand in der Menüleiste auf <b>Format</b> und dann auf <b>In reinen Text umwandeln</b>.</li>
+              <li>Füge das Programm mit <b>cmd + V</b> ein.</li>
+              <li>Klick in der Menüleiste auf <b>Ablage</b> (das ist der Mac-Name für „Datei“) und dann auf <b>Sichern</b>.</li>
+              <li>Nenn die Datei <code>vokabeltrainer.html</code>.</li>
+              <li>Wähle als Ort <b>Schreibtisch</b> und klick auf <b>Sichern</b>.</li>
+              <li>Fragt der Mac nach der Endung, klick auf <b>„.html“ verwenden</b>.</li>
+            </ol>
+          </li>
+          <li>Doppelklick auf die Datei auf deinem Desktop bzw. Schreibtisch: Dein Trainer öffnet sich im Browser.</li>
+        </ol>
+        <p class="howto-note">Zeigt dein KI-Chat eine <b>Vorschau</b> an? Dann kannst du dort schon testen. Speichern solltest du trotzdem, sonst ist dein Trainer weg, wenn du den Chat schließt.</p>
+      </div>
+          </div>
+          <div class="tl-gate">
+            <p class="tl-q"><b>Hat es geklappt?</b> Ja, wenn sich dein Trainer per Doppelklick im Browser öffnet und das erste Wort zeigt.</p>
+            <button type="button" class="tl-back">← <span class="lg">Zurück zu Schritt 3</span><span class="sh">Zurück</span></button>
+            <button type="button" class="tl-next"><span class="lg">Ja, weiter zu Schritt 5</span><span class="sh">Weiter</span></button>
+          </div>
+        </div>
+      </li>
+      <li class="tl-step" data-step="5" id="schritt-5">
+        <h3 class="tl-h"><button type="button" class="tl-head" aria-expanded="true" aria-controls="tl-body-5">
+          <span class="num tl-num"><span class="tl-n">5</span><svg class="tl-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tl-title">Ausprobieren<span class="tl-sum">Du übst einmal alle Wörter durch und schaust genau hin, ob alles klappt.</span></span>
+          <span class="tl-tag"></span><svg class="tl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button></h3>
+        <div class="tl-body" id="tl-body-5">
+          <div class="step-body">
+            <dl class="explain"><dt>Was passiert</dt><dd>Du übst einmal alle Wörter durch und schaust genau hin, ob alles klappt.</dd><dt>Warum</dt><dd>Erst beim Ausprobieren merkst du, was noch nicht passt. Testen ist die halbe Arbeit, auch bei Profis.</dd></dl>
+            <p class="check"><b>Teste diese drei Dinge:</b> Kommen alle 10 Wörter und hört er danach auf? Was passiert bei einem Tippfehler? Zählen die Punkte richtig? Wenn etwas nicht stimmt, schick das hier:</p>
+      <div class="prompt"><pre>Beim Testen ist mir das aufgefallen: <span class="ph">[beschreib, was passiert ist]</span>. Bitte ändere nur das.</pre></div>
+          </div>
+          <div class="tl-gate">
+            <p class="tl-q"><b>Hat es geklappt?</b> Ja, wenn alle drei Tests klappen. Wenn nicht, schick der KI den Satz oben und teste noch mal.</p>
+            <button type="button" class="tl-back">← <span class="lg">Zurück zu Schritt 4</span><span class="sh">Zurück</span></button>
+            <button type="button" class="tl-next"><span class="lg">Ja, erste Version fertig</span><span class="sh">Fertig</span></button>
+          </div>
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <h2 id="besser">Mach deinen Trainer besser, Stück für Stück</h2>
+  <p class="intro">Für die folgenden Verbesserungen musst du die vorhandene Datei <code>vokabeltrainer.html</code> jedes Mal überschreiben. Und das geht so:</p>
+  <div class="howto howto-intro">
+    <p class="howto-lead">Die KI schickt dir jedes Mal das ganze Programm neu.</p>
+    <ol>
+      <li><b>Wenn du am Mac bist, musst du einmal dies machen:</b> Öffne TextEdit. Klick oben in der Menüleiste auf <b>TextEdit → Einstellungen</b>, dann auf <b>Öffnen und Sichern</b>. Setz einen Haken bei <b>„HTML-Dateien als HTML-Code anstelle von formatiertem Text anzeigen“</b>. Sonst zeigt TextEdit nicht den Code, sondern die fertige Seite.</li>
+      <li>Klick in der KI beim neuen Programm auf <b>Kopieren</b>.</li>
+      <li>Klick mit der rechten Maustaste auf die Datei <code>vokabeltrainer.html</code> auf deinem Desktop bzw. Schreibtisch. Wähle <b>Öffnen mit → Editor</b> (Windows) bzw. <b>Öffnen mit → TextEdit</b> (Mac).</li>
+      <li>Markiere den alten Code mit <b>Strg + A</b> (Windows) bzw. <b>cmd + A</b> (Mac).</li>
+      <li>Füge das neue Programm mit <b>Strg + V</b> (Windows) bzw. <b>cmd + V</b> (Mac) ein. Der alte Code wird dabei ersetzt.</li>
+      <li>Speichere mit <b>Strg + S</b> (Windows) bzw. <b>cmd + S</b> (Mac).</li>
+      <li>Öffne die Datei wieder mit Doppelklick und probier die Verbesserung aus.</li>
+    </ol>
+  </div>
+
+  <div class="tl-wrap" data-key="besser" data-mode="seq" data-after="extras">
+    <div class="tl-progress"><span class="tl-count" aria-live="polite">0 von 2 geschafft</span><span class="tl-bar" aria-hidden="true"><i></i></span><button type="button" class="tl-reset" hidden>Von vorn</button></div>
+    <ol class="tl">
+      <li class="tl-step" data-step="6" id="schritt-6">
+        <h3 class="tl-h"><button type="button" class="tl-head" aria-expanded="true" aria-controls="tl-body-6">
+          <span class="num tl-num"><span class="tl-n">6</span><svg class="tl-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tl-title">Falsche Antworten wiederholen<span class="tl-sum">Falsch beantwortete Vokabeln immer wieder neu abfragen, bis du sie kannst.</span></span>
+          <span class="tl-tag"></span><svg class="tl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button></h3>
+        <div class="tl-body" id="tl-body-6">
+          <div class="step-body">
+            <dl class="explain"><dt>Was passiert</dt><dd>Falsch beantwortete Vokabeln immer wieder neu abfragen, bis du sie kannst.</dd><dt>Warum</dt><dd>So übst du gezielt die schwierigen Wörter, statt immer wieder die, die du schon kannst. Du änderst damit die Regeln deines Trainers.</dd></dl>
+            <div class="prompt"><pre>Verbesserung: Wörter, die ich falsch beantwortet habe, sollen am Ende noch einmal abgefragt werden, so lange, bis ich alle richtig habe. Wenn ich alle Wörter richtig habe, hört der Trainer auf. Ändere sonst nichts und gib mir die ganze Datei.</pre></div>
+          </div>
+          <div class="tl-gate">
+            <p class="tl-q"><b>Hat es geklappt?</b> Ja, wenn ein Wort, das du absichtlich falsch tippst, am Ende noch einmal kommt und der Trainer aufhört, wenn du alle richtig hast.</p>
+            <button type="button" class="tl-next"><span class="lg">Ja, weiter zu Schritt 7</span><span class="sh">Weiter</span></button>
+          </div>
+        </div>
+      </li>
+      <li class="tl-step" data-step="7" id="schritt-7">
+        <h3 class="tl-h"><button type="button" class="tl-head" aria-expanded="true" aria-controls="tl-body-7">
+          <span class="num tl-num"><span class="tl-n">7</span><svg class="tl-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tl-title">Fortschritt anzeigen<span class="tl-sum">Ein Balken zeigt, wie viele Wörter du schon geschafft hast.</span></span>
+          <span class="tl-tag"></span><svg class="tl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button></h3>
+        <div class="tl-body" id="tl-body-7">
+          <div class="step-body">
+            <dl class="explain"><dt>Was passiert</dt><dd>Ein Balken zeigt, wie viele Wörter du schon geschafft hast.</dd><dt>Warum</dt><dd>Du siehst, wie weit du bist, und das motiviert. Du änderst damit die Anzeige, also das, was du siehst.</dd></dl>
+            <div class="prompt"><pre>Verbesserung: Zeig oben einen Fortschrittsbalken, der anzeigt, wie viele Wörter ich schon beantwortet habe, zum Beispiel „4 von 10“. Lass den Balken aussehen, als wäre es ein Thermometer, das auf der Seite liegt. Ändere sonst nichts und gib mir die ganze Datei.</pre></div>
+          </div>
+          <div class="tl-gate">
+            <p class="tl-q"><b>Hat es geklappt?</b> Ja, wenn der Balken mit jeder richtigen Antwort wächst.</p>
+            <button type="button" class="tl-back">← <span class="lg">Zurück zu Schritt 6</span><span class="sh">Zurück</span></button>
+            <button type="button" class="tl-next"><span class="lg">Ja, weiter zu Schritt 8</span><span class="sh">Weiter</span></button>
+          </div>
+        </div>
+      </li>
+      <li class="tl-step" data-step="8" id="schritt-8">
+        <h3 class="tl-h"><button type="button" class="tl-head" aria-expanded="true" aria-controls="tl-body-8">
+          <span class="num tl-num"><span class="tl-n">8</span><svg class="tl-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tl-title">Richtung umdrehen<span class="tl-sum">Mit einem Knopf wechselst du zwischen „Englisch → Deutsch“ und „Deutsch → Englisch“.</span></span>
+          <span class="tl-tag"></span><svg class="tl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button></h3>
+        <div class="tl-body" id="tl-body-8">
+          <div class="step-body">
+            <dl class="explain"><dt>Was passiert</dt><dd>Mit einem Knopf wechselst du zwischen „Englisch → Deutsch“ und „Deutsch → Englisch“.</dd><dt>Warum</dt><dd>In der Schule wird gerne in beide Richtungen gefragt. Diese Verbesserung ändert Regeln und Anzeige gleichzeitig, deshalb ist sie die schwierigste.</dd></dl>
+            <div class="prompt"><pre>Verbesserung: Füge oben einen Knopf hinzu, mit dem ich die Richtung wechseln kann: „Englisch → Deutsch“ oder „Deutsch → Englisch“. Ändere sonst nichts und gib mir die ganze Datei.</pre></div>
+          </div>
+          <div class="tl-gate">
+            <p class="tl-q"><b>Hat es geklappt?</b> Ja, wenn nach einem Klick auf den Knopf die andere Sprache angezeigt wird.</p>
+            <button type="button" class="tl-back">← <span class="lg">Zurück zu Schritt 7</span><span class="sh">Zurück</span></button>
+            <button type="button" class="tl-next"><span class="lg">Ja, alle drei geschafft</span><span class="sh">Fertig</span></button>
+          </div>
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <h3 class="extras-title" id="extras">Extras <span class="kuer">(optional)</span></h3>
+  <p class="extras-lead">Wenn du weitermachen möchtest, sind hier noch weitere Ideen.</p>
+  <div class="tl-wrap" data-key="extras" data-mode="free">
+    <div class="tl-progress"><span class="tl-count" aria-live="polite">0 von 2 geschafft</span><span class="tl-bar" aria-hidden="true"><i></i></span><button type="button" class="tl-reset" hidden>Von vorn</button></div>
+    <ol class="tl">
+      <li class="tl-step" data-step="9" id="schritt-9">
+        <h4 class="tl-h"><button type="button" class="tl-head" aria-expanded="true" aria-controls="tl-body-9">
+          <span class="num tl-num"><span class="tl-n">9</span><svg class="tl-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tl-title">Belohnung am Ende<span class="tl-sum">Hast du alle Wörter richtig, feiert dein Trainer mit dir, zum Beispiel mit Konfetti.</span></span>
+          <span class="tl-tag"></span><svg class="tl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button></h4>
+        <div class="tl-body" id="tl-body-9">
+          <div class="step-body">
+            <dl class="explain"><dt>Was passiert</dt><dd>Hast du alle Wörter richtig, feiert dein Trainer mit dir, zum Beispiel mit Konfetti.</dd><dt>Warum</dt><dd>Lernen macht mehr Spaß, wenn es sich nach Erfolg anfühlt. Du kannst dir die Belohnung aussuchen.</dd></dl>
+            <div class="prompt"><pre>Verbesserung: Wenn ich alle Wörter richtig habe, soll der Trainer mit mir feiern, zum Beispiel mit Konfetti und dem Satz „Geschafft, du Held:in!“. Ändere sonst nichts und gib mir die ganze Datei.</pre></div>
+          </div>
+          <div class="tl-gate">
+            <p class="tl-q"><b>Hat es geklappt?</b> Ja, wenn dein Trainer nach dem letzten richtigen Wort mit dir feiert.</p>
+            <button type="button" class="tl-next">Geschafft</button>
+          </div>
+        </div>
+      </li>
+      <li class="tl-step" data-step="10" id="schritt-10">
+        <h4 class="tl-h"><button type="button" class="tl-head" aria-expanded="true" aria-controls="tl-body-10">
+          <span class="num tl-num"><span class="tl-n">10</span><svg class="tl-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tl-title">Dein eigener Look<span class="tl-sum">Du gibst deinem Trainer einen Namen und deine Lieblingsfarben.</span></span>
+          <span class="tl-tag"></span><svg class="tl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button></h4>
+        <div class="tl-body" id="tl-body-10">
+          <div class="step-body">
+            <dl class="explain"><dt>Was passiert</dt><dd>Du gibst deinem Trainer einen Namen und deine Lieblingsfarben.</dd><dt>Warum</dt><dd>Es ist dein Trainer. Hier darfst du dir alles wünschen, was dir gefällt. Ersetze die Wörter in den Klammern.</dd></dl>
+            <div class="prompt"><pre>Verbesserung: Mein Trainer soll „<span class="ph">[Name]</span>“ heißen. Gestalte ihn in <span class="ph">[deine Lieblingsfarben durch Komma getrennt]</span> und mach die Schrift schön groß. Ändere sonst nichts und gib mir die ganze Datei.</pre></div>
+          </div>
+          <div class="tl-gate">
+            <p class="tl-q"><b>Hat es geklappt?</b> Ja, wenn dein Trainer deinen Namen trägt und in deinen Farben erscheint.</p>
+            <button type="button" class="tl-next">Geschafft</button>
+          </div>
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <div class="howto howto-intro restart">
+    <p class="howto-title">Chat weg oder Limit erreicht? So machst du weiter</p>
+    <p class="howto-lead">Hast du den Chat geschlossen oder sagt die KI, dass dein Limit für heute erreicht ist? Kein Problem, dein Trainer ist ja gespeichert. Du kannst später weitermachen oder einen anderen KI-Chat nehmen, z. B. <b>Mistral</b> statt ChatGPT. Für Mistral brauchst du ein kostenloses Konto. Frag am besten deine Eltern, bevor du eins anlegst.</p>
+    <ol>
+      <li>Öffne einen <b>neuen Chat</b>.</li>
+      <li>Klick im Eingabefeld auf <b>+</b> bzw. die <b>Büroklammer</b> und lade deine Datei <code>vokabeltrainer.html</code> vom Desktop bzw. Schreibtisch hoch.</li>
+      <li>Schick dazu diesen Satz:</li>
+    </ol>
+    <div class="prompt"><pre>Ich bin Schüler:in und kann nicht programmieren. Das ist mein Vokabeltrainer, den ich mit einer KI gebaut habe. Wir machen jetzt zusammen weiter. Erklär mir alles kurz und einfach. Wenn du etwas änderst, gib mir immer die ganze Datei. Bau jetzt noch nichts, sag mir nur kurz, ob du alles verstanden hast.</pre></div>
+  </div>
+
+  <div class="next">
+    <div>
+      <p>Dein Trainer läuft? Zeig ihn jemandem aus deiner Klasse und frag: Was fehlt dir noch?</p>
+    </div>
+  </div>
+</main>
+<svg class="wave wave-up" viewBox="0 0 1200 36" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 0h1200v12c-100 0-100 22-200 22S900 12 800 12 700 34 600 34 500 12 400 12 300 34 200 34 100 12 0 12z"/></svg>
+<div class="band foot-band">
+  <svg class="stars" viewBox="0 0 1280 440" preserveAspectRatio="xMinYMin slice" aria-hidden="true"><circle cx="415" cy="66" r="0.6" fill="#f7f3f8" fill-opacity="0.49"/><circle cx="686" cy="161" r="0.6" fill="#f7f3f8" fill-opacity="0.95"/><circle cx="275" cy="38" r="1.5" fill="#f7f3f8" fill-opacity="0.49"/><circle cx="116" cy="187" r="0.8" fill="#f7f3f8" fill-opacity="0.97"/><circle cx="807" cy="257" r="0.6" fill="#f7f3f8" fill-opacity="0.77"/><circle cx="508" cy="430" r="0.6" fill="#f7f3f8" fill-opacity="0.76"/><circle cx="170" cy="184" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="151" cy="136" r="0.8" fill="#f7f3f8" fill-opacity="0.51"/><circle cx="731" cy="83" r="0.8" fill="#f7f3f8" fill-opacity="0.75"/><circle cx="80" cy="26" r="1" fill="#f7f3f8" fill-opacity="0.72"/><circle cx="681" cy="342" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="750" cy="199" r="1" fill="#f7f3f8" fill-opacity="0.59"/><circle cx="230" cy="343" r="0.8" fill="#f7f3f8" fill-opacity="0.77"/><circle cx="672" cy="385" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="369" cy="431" r="0.8" fill="#f7f3f8" fill-opacity="0.73"/><circle cx="211" cy="151" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="540" cy="423" r="0.8" fill="#f7f3f8" fill-opacity="0.87"/><circle cx="733" cy="385" r="1.2" fill="#f7f3f8" fill-opacity="0.64"/><circle cx="448" cy="219" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="88" cy="41" r="1" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="850" cy="27" r="1" fill="#f7f3f8" fill-opacity="0.81"/><circle cx="1271" cy="362" r="1" fill="#f7f3f8" fill-opacity="0.84"/><circle cx="1135" cy="153" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="455" cy="269" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="75" cy="338" r="0.8" fill="#f7f3f8" fill-opacity="0.86"/><circle cx="509" cy="403" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="103" cy="198" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="356" cy="60" r="1.5" fill="#f7f3f8" fill-opacity="0.93"/><circle cx="356" cy="183" r="1.2" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="487" cy="102" r="0.8" fill="#f7f3f8" fill-opacity="0.55"/><circle cx="297" cy="103" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="1064" cy="80" r="1" fill="#f7f3f8" fill-opacity="0.45"/><circle cx="536" cy="162" r="1.2" fill="#f7f3f8" fill-opacity="0.97"/><circle cx="884" cy="227" r="0.6" fill="#f7f3f8" fill-opacity="0.7"/><circle cx="1115" cy="419" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="502" cy="176" r="0.8" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="513" cy="84" r="1" fill="#f7f3f8" fill-opacity="0.69"/><circle cx="141" cy="264" r="0.8" fill="#f7f3f8" fill-opacity="0.45"/><circle cx="194" cy="45" r="1.2" fill="#f7f3f8" fill-opacity="0.79"/><circle cx="90" cy="91" r="1.5" fill="#f7f3f8" fill-opacity="0.53"/><circle cx="323" cy="153" r="1.2" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="148" cy="215" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="615" cy="137" r="0.8" fill="#f7f3f8" fill-opacity="0.51"/><circle cx="439" cy="116" r="0.8" fill="#f7f3f8" fill-opacity="0.73"/><circle cx="263" cy="419" r="1.2" fill="#f7f3f8" fill-opacity="0.53"/><circle cx="695" cy="12" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="382" cy="283" r="0.8" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="334" cy="161" r="0.8" fill="#f7f3f8" fill-opacity="0.65"/><circle cx="285" cy="238" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="422" cy="98" r="1" fill="#f7f3f8" fill-opacity="0.89"/><circle cx="1047" cy="326" r="1" fill="#f7f3f8" fill-opacity="0.56"/><circle cx="631" cy="322" r="0.6" fill="#f7f3f8" fill-opacity="0.88"/><circle cx="604" cy="85" r="1.2" fill="#f7f3f8" fill-opacity="0.7"/><circle cx="1199" cy="435" r="1.2" fill="#f7f3f8" fill-opacity="0.49"/><circle cx="131" cy="207" r="1.2" fill="#f7f3f8" fill-opacity="0.56"/><circle cx="799" cy="396" r="0.6" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="836" cy="352" r="0.8" fill="#f7f3f8" fill-opacity="0.91"/><circle cx="153" cy="171" r="1" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="229" cy="347" r="1.2" fill="#f7f3f8" fill-opacity="0.5"/><circle cx="1211" cy="318" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="514" cy="417" r="0.8" fill="#f7f3f8" fill-opacity="0.54"/><circle cx="163" cy="67" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="1032" cy="64" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="841" cy="154" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="702" cy="9" r="0.8" fill="#f7f3f8" fill-opacity="0.74"/><circle cx="1195" cy="191" r="1" fill="#f7f3f8" fill-opacity="0.9"/><circle cx="270" cy="111" r="1" fill="#f7f3f8" fill-opacity="0.73"/><circle cx="978" cy="143" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="536" cy="58" r="1.2" fill="#f7f3f8" fill-opacity="0.94"/><circle cx="848" cy="359" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="538" cy="404" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="167" cy="67" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="24" cy="194" r="0.8" fill="#f7f3f8" fill-opacity="0.78"/><circle cx="993" cy="66" r="0.8" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="928" cy="245" r="1.2" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="679" cy="212" r="0.8" fill="#f7f3f8" fill-opacity="0.94"/><circle cx="73" cy="84" r="0.6" fill="#f7f3f8" fill-opacity="0.87"/><circle cx="650" cy="247" r="0.8" fill="#f7f3f8" fill-opacity="0.69"/><circle cx="784" cy="222" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="255" cy="122" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="683" cy="210" r="1" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="1122" cy="415" r="1" fill="#f7f3f8" fill-opacity="0.96"/><circle cx="1143" cy="89" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="176" cy="54" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="404" cy="295" r="1.5" fill="#f7f3f8" fill-opacity="0.49"/><circle cx="857" cy="345" r="0.8" fill="#f7f3f8" fill-opacity="0.97"/><circle cx="824" cy="161" r="1" fill="#f7f3f8" fill-opacity="0.94"/><circle cx="1238" cy="97" r="0.8" fill="#f7f3f8" fill-opacity="0.67"/><circle cx="624" cy="436" r="1" fill="#f7f3f8" fill-opacity="0.54"/><circle cx="552" cy="227" r="1.2" fill="#f7f3f8" fill-opacity="0.68"/><circle cx="456" cy="41" r="1.2" fill="#f7f3f8" fill-opacity="0.46"/><circle cx="709" cy="194" r="0.6" fill="#f7f3f8" fill-opacity="0.66"/><circle cx="662" cy="130" r="0.8" fill="#f7f3f8" fill-opacity="0.51"/><circle cx="1176" cy="101" r="0.8" fill="#f7f3f8" fill-opacity="0.5"/><circle cx="348" cy="399" r="0.8" fill="#f7f3f8" fill-opacity="0.6"/><circle cx="166" cy="186" r="1" fill="#f7f3f8" fill-opacity="0.67"/><circle cx="687" cy="227" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="897" cy="39" r="0.6" fill="#f7f3f8" fill-opacity="0.89"/><circle cx="235" cy="394" r="1" fill="#f7f3f8" fill-opacity="0.97"/><circle cx="812" cy="353" r="0.8" fill="#f7f3f8" fill-opacity="0.78"/><circle cx="285" cy="116" r="0.8" fill="#f7f3f8" fill-opacity="0.7"/><circle cx="434" cy="243" r="1" fill="#f7f3f8" fill-opacity="0.79"/><circle cx="55" cy="312" r="0.8" fill="#f7f3f8" fill-opacity="0.98"/><circle cx="335" cy="80" r="1" fill="#f7f3f8" fill-opacity="0.8"/><circle cx="680" cy="91" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="640" cy="78" r="1.2" fill="#f7f3f8" fill-opacity="0.89"/><circle cx="1273" cy="16" r="0.6" fill="#f7f3f8" fill-opacity="0.85"/><circle cx="705" cy="83" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="314" cy="197" r="1.5" fill="#f7f3f8" fill-opacity="0.81"/><circle cx="699" cy="391" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="394" cy="95" r="1" fill="#f7f3f8" fill-opacity="0.64"/><circle cx="1065" cy="311" r="0.8" fill="#f7f3f8" fill-opacity="0.67"/><circle cx="445" cy="24" r="0.8" fill="#f7f3f8" fill-opacity="0.46"/><circle cx="801" cy="387" r="1.5" fill="#f7f3f8" fill-opacity="0.54"/><circle cx="108" cy="370" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="858" cy="124" r="1" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="58" cy="82" r="1" fill="#f7f3f8" fill-opacity="0.7"/><circle cx="337" cy="423" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="414" cy="15" r="1" fill="#f7f3f8" fill-opacity="0.57"/><circle cx="234" cy="148" r="0.8" fill="#f7f3f8" fill-opacity="0.71"/><circle cx="644" cy="88" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="994" cy="40" r="0.8" fill="#f7f3f8" fill-opacity="0.53"/><circle cx="751" cy="173" r="1" fill="#f7f3f8" fill-opacity="0.62"/><circle cx="298" cy="258" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="1092" cy="68" r="1.5" fill="#f7f3f8" fill-opacity="0.87"/><circle cx="922" cy="217" r="1" fill="#f7f3f8" fill-opacity="0.85"/><circle cx="823" cy="19" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="803" cy="323" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="178" cy="230" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="728" cy="358" r="0.6" fill="#f7f3f8" fill-opacity="0.9"/><circle cx="748" cy="393" r="1" fill="#f7f3f8" fill-opacity="0.5"/><circle cx="54" cy="280" r="0.8" fill="#f7f3f8" fill-opacity="0.66"/><circle cx="578" cy="22" r="0.6" fill="#f7f3f8" fill-opacity="0.79"/><circle cx="871" cy="215" r="0.6" fill="#f7f3f8" fill-opacity="0.7"/><circle cx="90" cy="410" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="118" cy="231" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="323" cy="33" r="1" fill="#f7f3f8" fill-opacity="0.58"/><circle cx="968" cy="102" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="632" cy="168" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="1165" cy="126" r="0.6" fill="#f7f3f8" fill-opacity="0.79"/><circle cx="823" cy="34" r="0.8" fill="#f7f3f8" fill-opacity="0.63"/><circle cx="834" cy="305" r="0.8" fill="#f7f3f8" fill-opacity="0.46"/><circle cx="78" cy="118" r="0.8" fill="#f7f3f8" fill-opacity="0.83"/><circle cx="865" cy="128" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="365" cy="205" r="0.8" fill="#f7f3f8" fill-opacity="1.0"/><circle cx="703" cy="137" r="0.8" fill="#f7f3f8" fill-opacity="0.96"/><circle cx="22" cy="202" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="1239" cy="198" r="1" fill="#f7f3f8" fill-opacity="0.66"/><circle cx="1173" cy="409" r="0.8" fill="#f7f3f8" fill-opacity="0.77"/><circle cx="181" cy="231" r="1.2" fill="#f7f3f8" fill-opacity="0.52"/><circle cx="1050" cy="224" r="0.8" fill="#f7f3f8" fill-opacity="0.84"/><circle cx="296" cy="395" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="504" cy="70" r="2" fill="#f7f3f8" fill-opacity="1"/><circle cx="872" cy="178" r="0.8" fill="#f7f3f8" fill-opacity="0.68"/><circle cx="481" cy="53" r="1.2" fill="#f7f3f8" fill-opacity="0.45"/><circle cx="961" cy="369" r="0.8" fill="#f7f3f8" fill-opacity="0.97"/><circle cx="251" cy="5" r="1" fill="#f7f3f8" fill-opacity="0.59"/><circle cx="83" cy="172" r="0.8" fill="#f7f3f8" fill-opacity="0.65"/><circle cx="548" cy="121" r="0.6" fill="#f7f3f8" fill-opacity="0.6"/><circle cx="66" cy="291" r="0.8" fill="#f7f3f8" fill-opacity="0.59"/><circle cx="340" cy="225" r="1" fill="#f7f3f8" fill-opacity="0.88"/><circle cx="1005" cy="188" r="0.6" fill="#f7f3f8" fill-opacity="0.9"/><circle cx="808" cy="402" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="703" cy="317" r="0.6" fill="#f7f3f8" fill-opacity="0.96"/><circle cx="526" cy="271" r="0.8" fill="#f7f3f8" fill-opacity="0.8"/><circle cx="366" cy="22" r="2.6" fill="#f7f3f8" fill-opacity="1"/><circle cx="163" cy="208" r="1.2" fill="#f7f3f8" fill-opacity="0.6"/><circle cx="327" cy="325" r="1" fill="#f7f3f8" fill-opacity="0.67"/><circle cx="305" cy="213" r="1.5" fill="#f7f3f8" fill-opacity="0.52"/><circle cx="823" cy="33" r="2.6" fill="#f7f3f8" fill-opacity="1"/></svg>
+  <div class="wrap">
+  <section class="end">
+    <h2>Geschafft, dein erster eigener Vokabeltrainer!</h2>
+    <p>Du hast mit der KI ein Werkzeug gebaut, das du wirklich benutzen kannst. Und du weißt jetzt, wie es geht: genau beschreiben, testen, Stück für Stück verbessern. Damit kannst du dir auch andere Ideen bauen. Los gehts!</p>
+  </section>
+
+  <footer>
+    <a class="co2" href="https://www.websitecarbon.com/website/einfachmachen-design/" target="_blank" rel="noopener"><span class="co2-badge">A+</span><span>Website Carbon: unter 0,01 g CO<sub>2</sub> pro Besuch · ca. 85 kB · Ökostrom-Hosting · kein Tracking, keine Cookies</span></a>
+    <a href="impressum/">Impressum &amp; Datenschutz</a>
+  </footer>
+  </div>
+</div>
+
+
+<div class="sr-only" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  var toast = document.getElementById('toast');
+  var check = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  function show(msg) { toast.textContent = ''; setTimeout(function () { toast.textContent = msg; }, 50); }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    return ok;
+  }
+  document.querySelectorAll('.prompt').forEach(function (box) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy';
+    btn.innerHTML = icon + '<span>Kopieren</span>';
+    btn.setAttribute('aria-label', 'Prompt kopieren');
+    btn.addEventListener('click', function () {
+      var text = box.querySelector('pre').textContent;
+      var done = function () {
+        btn.classList.add('copied');
+        btn.innerHTML = check + '<span>Kopiert</span>';
+        show('In die Zwischenablage kopiert');
+        clearTimeout(btn._t);
+        btn._t = setTimeout(function () { btn.classList.remove('copied'); btn.innerHTML = icon + '<span>Kopieren</span>'; }, 2000);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, function () { if (fallbackCopy(text)) done(); });
+      } else if (fallbackCopy(text)) { done(); }
+    });
+    box.appendChild(btn);
+  });
+})();
+// Zeitleisten: ein Schritt offen, abhaken, zurück; Fortschritt nur bis zum Neuladen
+(function () {
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function go(el, block) { el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: block || 'start' }); }
+  [].forEach.call(document.querySelectorAll('.tl-wrap'), function (wrap) {
+    var free = wrap.getAttribute('data-mode') === 'free';
+    var steps = [].slice.call(wrap.querySelectorAll('.tl-step'));
+    var count = wrap.querySelector('.tl-count'), bar = wrap.querySelector('.tl-bar i');
+    var reset = wrap.querySelector('.tl-reset');
+    var done = [];   // bei jedem Laden von vorn, nichts wird gespeichert
+    try { localStorage.removeItem('tl-' + wrap.getAttribute('data-key')); } catch (e) {}   // alte Stände aufräumen
+    function save() {}
+    function isDone(j) { return done.indexOf(+steps[j].getAttribute('data-step')) >= 0; }
+    function current() { if (free) return -1; for (var j = 0; j < steps.length; j++) if (!isDone(j)) return j; return -1; }
+    function open(i, scroll) {
+      steps.forEach(function (s, j) {
+        s.classList.toggle('open', j === i);
+        s.querySelector('.tl-head').setAttribute('aria-expanded', j === i ? 'true' : 'false');
+      });
+      if (scroll && i >= 0) go(steps[i]);
+    }
+    function render() {
+      var cur = current();
+      steps.forEach(function (s, j) {
+        s.classList.toggle('done', isDone(j));
+        s.classList.toggle('current', j === cur);
+        s.classList.toggle('todo', !isDone(j) && j !== cur);
+      });
+      count.textContent = done.length + ' von ' + steps.length + ' geschafft';
+      bar.style.width = (done.length / steps.length * 100) + '%';
+      reset.hidden = done.length === 0;
+    }
+    steps.forEach(function (s, j) {
+      var n = +s.getAttribute('data-step');
+      s.querySelector('.tl-head').addEventListener('click', function () {
+        var opening = !s.classList.contains('open');
+        open(opening ? j : -1);
+        if (opening) s.scrollIntoView({ block: 'nearest' });
+      });
+      s.querySelector('.tl-next').addEventListener('click', function () {
+        if (done.indexOf(n) < 0) done.push(n);
+        save(); render();
+        if (free) { open(-1); go(s); return; }
+        if (j + 1 < steps.length) { open(j + 1); go(s); }
+        else { open(-1); var after = document.getElementById(wrap.getAttribute('data-after') || ''); if (after) go(after); }
+      });
+      var back = s.querySelector('.tl-back');
+      if (back) back.addEventListener('click', function () { open(j - 1, true); });
+    });
+    reset.addEventListener('click', function () { done = []; save(); render(); open(free ? -1 : 0, true); });
+    wrap.classList.add('tl-on');
+    render(); open(current());
+  });
+})();
+// Schritt 4: nur die Speicher-Anleitung für das eigene System zeigen
+(function () {
+  var sw = document.querySelector('.os-switch'); if (!sw) return;
+  var list = sw.nextElementSibling, btns = [].slice.call(sw.querySelectorAll('.os-btn'));
+  function set(os) {
+    list.dataset.show = os;
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.os === os ? 'true' : 'false'); });
+  }
+  var saved = null; try { saved = localStorage.getItem('os'); } catch (e) {}
+  var ua = navigator.userAgent, mobile = /Android|iPhone|iPad|Mobile/.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua));
+  var guess = mobile ? 'none' : /Macintosh|Mac OS X/.test(ua) ? 'mac' : /Windows/.test(ua) ? 'win' : 'none';
+  btns.forEach(function (b) { b.addEventListener('click', function () { set(b.dataset.os); try { localStorage.setItem('os', b.dataset.os); } catch (e) {} }); });
+  sw.hidden = false;
+  set(saved || guess);
+})();
+// Jig (Finetuning-Panel), nur lokal mit ?jig
+if (/[?&]jig\b/.test(location.search)) { var j = document.createElement('script'); j.src = 'jig.js'; document.body.appendChild(j); }
+</script>
+</body>
+</html>
